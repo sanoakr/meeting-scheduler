@@ -6,7 +6,7 @@ import FullCalendar from '@fullcalendar/react';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import { Container, Row, Col, Button, Alert, Card, Form } from 'react-bootstrap';
+import { Container, Row, Col, Button, Alert, Card, Form, Badge } from 'react-bootstrap';
 
 export default function GroupPage() {
   const router = useRouter();
@@ -17,6 +17,20 @@ export default function GroupPage() {
   const [results, setResults] = useState([]);
   const [isCopied, setIsCopied] = useState(false);
   const [pageUrl, setPageUrl] = useState('');
+
+  // ユーザー名に基づいて背景色を生成
+  const getColorByUserName = (name) => {
+    const colors = [
+      '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB',
+      '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3',
+      '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC'
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
 
   // グループ名を取得
   useEffect(() => {
@@ -34,12 +48,23 @@ export default function GroupPage() {
     }
   }, [id]);
 
-  // 候補日データを取得
+  // 候補日データを取得し、色を割り当てる
   useEffect(() => {
     if (id) {
       fetch(`/api/group/${id}/candidates`)
         .then(res => res.json())
-        .then(data => setEvents(data))
+        .then(data => {
+          if (Array.isArray(data)) {
+            const coloredEvents = data.map(event => ({
+              ...event,
+              backgroundColor: getColorByUserName(event.title || 'Unknown User'),
+            }));
+            setEvents(coloredEvents);
+          } else {
+            console.warn('予期しないデータ形式:', data);
+            setEvents([]);
+          }
+        })
         .catch((error) => console.error('Error fetching candidates:', error));
     }
   }, [id]);
@@ -188,20 +213,6 @@ export default function GroupPage() {
     }
   };
 
-  // ユーザー名に基づいて背景色を生成
-  const getColorByUserName = (name) => {
-    const colors = [
-      '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB',
-      '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3',
-      '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC'
-    ];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-
   // カスタムイベントレンダリング関数
   function renderEventContent(eventInfo) {
     return (
@@ -217,6 +228,9 @@ export default function GroupPage() {
     const duration = (end - start) / (1000 * 60 * 60); // 時間単位で計算
     return duration === 1;
   };
+
+  // 候補日の最大人数を計算
+  const maxCount = results.length > 0 ? Math.max(...results.map(r => r._count.id)) : 0;
 
   return (
     <Container className="mt-5">
@@ -287,12 +301,23 @@ export default function GroupPage() {
             <Card.Body>
               <h5 className="mb-3">最終候補日</h5>
               <ul className="list-unstyled">
-                {results.map((result, index) => (
-                  <li key={index} className="mb-2">
-                    {new Date(result.startDateTime).toLocaleString()} -{' '}
-                    {new Date(result.endDateTime).toLocaleTimeString()} ({result._count.id}人)
-                  </li>
-                ))}
+                {results.map((result, index) => {
+                  const isMax = result._count.id === maxCount; // 最大人数かどうかを判定
+                  return (
+                    <li
+                      key={index}
+                      className={`mb-2 d-flex justify-content-between align-items-center p-2 rounded ${isMax ? 'bg-warning text-dark' : ''}`}
+                    >
+                      <span>
+                        {new Date(result.startDateTime).toLocaleString()} - {new Date(result.endDateTime).toLocaleTimeString()}
+                      </span>
+                      <span>
+                        {result._count.id}人
+                        {isMax && <Badge bg="secondary" className="ms-2">最も多い</Badge>}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </Card.Body>
           </Card>
