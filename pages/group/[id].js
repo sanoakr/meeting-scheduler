@@ -23,7 +23,11 @@ export default function GroupPage() {
     const colors = [
       '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB',
       '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3',
-      '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC'
+      '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC',
+      // 新しい色を追加
+      '#FFAB91', '#FFCC80', '#FFE082', '#FFF59D', '#E6EE9C', '#C5E1A5',
+      '#A5D6A7', '#80CBC4', '#80DEEA', '#81D4FA', '#90CAF9', '#9FA8DA',
+      '#A5A9E6', '#CE93D8', '#F48FB1', '#FFAB91'
     ];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -32,6 +36,29 @@ export default function GroupPage() {
     return colors[Math.abs(hash) % colors.length];
   };
   
+  // 日付フォーマット用ヘルパー関数
+  const formatDateWithWeekday = (dateString) => {
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+      // secondはデフォルトで表示されません
+    };
+    return new Date(dateString).toLocaleString('ja-JP', options);
+  };
+
+  const formatTime = (dateString) => {
+    const options = {
+      hour: '2-digit',
+      minute: '2-digit'
+      // secondは表示されません
+    };
+    return new Date(dateString).toLocaleTimeString('ja-JP', options);
+  };
+
   // グループ名を取得
   useEffect(() => {
     if (id) {
@@ -347,7 +374,7 @@ export default function GroupPage() {
         className={`mb-2 d-flex justify-content-between align-items-center p-2 rounded ${isMax ? 'bg-warning text-dark' : ''}`}
         >
         <span>
-        {new Date(result.startDateTime).toLocaleString()} - {new Date(result.endDateTime).toLocaleTimeString()}
+          {formatDateWithWeekday(result.startDateTime)} - {formatTime(result.endDateTime)}
         </span>
         <span>
         {result._count.id}人
