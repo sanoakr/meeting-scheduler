@@ -103,46 +103,6 @@ export default function GroupPage() {
     .catch((error) => console.error('URLのコピーに失敗しました:', error));
   };
   
-  // ユーザー名を取得してイベントを追加
-  const handleDateSelect = async (selectInfo) => {
-    if (!name.trim()) {
-      alert('名前を入力してください');
-      return;
-    }
-    const { start, end } = selectInfo;
-    
-    // 選択された期間が1時間かどうかを確認
-    const duration = (end - start) / (1000 * 60 * 60); // 時間単位で計算
-    if (duration !== 1) {
-      alert('候補日は1時間単位で選択してください');
-      return;
-    }
-    
-    try {
-      const res = await fetch(`/api/group/${id}/candidates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ start, end, name }),
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        // ユーザーごとの色を設定
-        const newEvent = {
-          ...data,
-          backgroundColor: getColorByUserName(name),
-        };
-        setEvents([...events, newEvent]);
-      } else {
-        const errorData = await res.json();
-        alert(`エラー: ${errorData.error}`);
-      }
-    } catch (err) {
-      alert('イベントの追加中にエラーが発生しました');
-      console.error('Error adding event:', err);
-    }
-  };
-  
   // ハンドラ関数の追加
   const handleDateClick = async (clickInfo) => {
     console.log('Date clicked:', clickInfo.start, clickInfo.end); // デバッグ用ログ
@@ -307,6 +267,8 @@ export default function GroupPage() {
     <Card.Body style={{ padding: '0.5rem' }}>
     <FullCalendar
     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+    slotMinWidth={30} // スロットの最小幅を設定
+    slotMaxWidth={60} // スロットの最大幅を設定
     initialView="todayWeek"
     headerToolbar={{
       left: 'prev,next today',
@@ -327,7 +289,7 @@ export default function GroupPage() {
       }
     }}
     selectable={true}
-    select={handleDateSelect}
+    //select={handleDateSelect}
     selectAllow={selectAllow} // 選択許可関数を追加
     dateClick={handleDateClick} // 追加
     events={events}
