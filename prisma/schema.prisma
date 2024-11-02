@@ -1,0 +1,26 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "sqlite" // または使用しているデータベースプロバイダー
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Candidate {
+  id            Int       @id @default(autoincrement())
+  name          String
+  startDateTime DateTime
+  endDateTime   DateTime
+  groupId       String
+  group         Group     @relation(fields: [groupId], references: [id])
+}
+
+model Group {
+  id          String      @id
+  name        String      // グループ名フィールドを追加
+  createdAt   DateTime    @default(now())
+  candidates  Candidate[]
+}
