@@ -244,6 +244,7 @@ export default function GroupPage() {
         <Col>
           <h1 className="text-center mb-3">{groupName || 'グループ名が設定されていません'}</h1>
           <div className="text-center">
+            {/* <p>グループURL:</p> を削除 */}
             {pageUrl && (
               <Button variant="link" onClick={handleCopyUrl} style={{ textDecoration: 'underline' }}>
                 {pageUrl}
@@ -262,7 +263,25 @@ export default function GroupPage() {
             <Card.Body>
               <FullCalendar
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="timeGridWeek"
+                initialView="todayWeek"
+                headerToolbar={{
+                  left: 'prev,next today',
+                  center: 'title',
+                  right: '' // 「今週」ボタンを削除
+                }}
+                views={{
+                  todayWeek: {
+                    type: 'timeGrid',
+                    duration: { days: 7 },
+                    buttonText: '今日から1週間',
+                    visibleRange: function(currentDate) {
+                      const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+                      const end = new Date(start);
+                      end.setDate(end.getDate() + 7);
+                      return { start, end };
+                    }
+                  }
+                }}
                 selectable={true}
                 select={handleDateSelect}
                 selectAllow={selectAllow} // 選択許可関数を追加
