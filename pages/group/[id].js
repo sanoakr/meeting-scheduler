@@ -145,6 +145,11 @@ export default function GroupPage() {
 
   // イベントクリック時の処理
   const handleEventClick = async (clickInfo) => {
+    if (!name.trim()) {
+      alert('イベントを操作するには、まず名前を入力してください。');
+      return; // 名前が未入力の場合、処理を中断
+    }
+
     const event = clickInfo.event;
     const eventStart = event.start;
     const eventEnd = event.end;
@@ -272,6 +277,10 @@ export default function GroupPage() {
                 selectMinDuration="01:00:00" // 選択の最小時間を1時間に
                 selectMaxDuration="01:00:00" // 選択の最大時間を1時間に
                 eventContent={renderEventContent} // カスタムイベントレンダリング
+                eventClassNames={(arg) => {
+                  // 名前が未入力の場合にクラスを追加
+                  return !name.trim() ? 'event-disabled' : '';
+                }}
               />
             </Card.Body>
           </Card>
