@@ -346,7 +346,6 @@ export default function GroupPage() {
               />
               {/* ユーザー一覧を表示 */}
               <div className="mt-4">
-                <h5 className="mb-3">ユーザー一覧</h5>
                 <div className="d-flex flex-wrap">
                   {users.map(([userName, color], index) => (
                     <div key={index} className="mb-2 me-2 px-3 py-1 rounded" style={{ backgroundColor: color }}>
