@@ -388,6 +388,19 @@ export default function GroupPage() {
   });
   const users = Array.from(usersMap.entries()); // [ユーザー名, 色] の配列
 
+  // ユーザー一覧を取得する関数を追加
+  const getUsersForTimeSlot = (startTime) => {
+    return events
+      .filter(event => 
+        new Date(event.start).getTime() === new Date(startTime).getTime() &&
+        event.title !== 'GROUP'
+      )
+      .map(event => ({
+        name: event.title,
+        color: event.backgroundColor
+      }));
+  };
+
   return (
     <Container className="mt-5">
       {/* グループ名とURL */}
@@ -521,20 +534,39 @@ export default function GroupPage() {
               <h5 className="mb-3">最終候補日</h5>
               <ul className="list-unstyled">
                 {results.map((result, index) => {
-                  const isMax = result._count.id === maxCount; // 最大人数かどうかを判定
+                  const isMax = result._count.id === maxCount;
+                  const users = getUsersForTimeSlot(result.startDateTime);
                   return (
-                    <li
-                      key={index}
-                      className={`mb-2 d-flex justify-content-between align-items-center p-2 rounded ${isMax ? 'bg-warning text-dark' : ''}`}
-                    >
-                      <span>
-                        {formatDateWithWeekday(result.startDateTime)} - {formatTime(result.endDateTime)}
-                      </span>
-                      <span>
-                        {result._count.id}人
-                        {isMax && <Badge bg="secondary" className="ms-2">最も多い</Badge>}
-                      </span>
-                    </li>
+                    <React.Fragment key={index}>
+                      <li className={`mb-2 d-flex justify-content-between align-items-center p-2 rounded ${isMax ? 'bg-warning text-dark' : ''}`}>
+                        <span>
+                          {formatDateWithWeekday(result.startDateTime)} - {formatTime(result.endDateTime)}
+                        </span>
+                        <span>
+                          {result._count.id}人
+                          {isMax && <Badge bg="secondary" className="ms-2">最も多い</Badge>}
+                        </span>
+                      </li>
+                      {isMax && users.length > 0 && (
+                        <li className="ms-3 mb-3">
+                          <div className="d-flex flex-wrap gap-2 mt-2">
+                            {users.map((user, userIndex) => (
+                              <span
+                                key={userIndex}
+                                className="px-2 py-1 rounded"
+                                style={{ 
+                                  backgroundColor: user.color,
+                                  color: '#fff',
+                                  fontSize: '0.9rem'
+                                }}
+                              >
+                                {user.name}
+                              </span>
+                            ))}
+                          </div>
+                        </li>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </ul>
