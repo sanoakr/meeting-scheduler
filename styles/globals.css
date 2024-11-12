@@ -68,15 +68,15 @@ a {
   overflow: visible !important;
   text-overflow: clip !important;
   line-height: 1.1 !important;
-  text-align: center !重要; /* 垂直方向の中央揃え */
+  text-align: center !important; /* 垂直方向の中央揃え */
   line-height: 1 !important;
   width: 100%; /* 幅を100%に */
   height: 100%; /* 高さを100%に */
-  display: flex !重要; /* Flexboxを使用 */
-  align-items: center !重要; /* 垂直方向の中央揃え */
-  justify-content: center !重要; /* 水平方向の中央揃え */
-  font-size: 13px !重要; /* フォントサイズを大きく */
-  font-weight: 500 !重要; /* フォントを少し太く */
+  display: flex !important; /* Flexboxを使用 */
+  align-items: center !important; /* 垂直方向の中央揃え */
+  justify-content: center !important; /* 水平方向の中央揃え */
+  font-size: 13px !important; /* フォントサイズを大きく */
+  font-weight: 500 !important; /* フォントを少し太く */
 }
 
 /* 2行目以降のイベントのスタイル */
@@ -85,5 +85,5 @@ a {
 }
 
 .fc-timegrid-event {
-  overflow: hidden !重要; /* はみ出しを隠す */
+  overflow: hidden !important; /* はみ出しを隠す */
 }

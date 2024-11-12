@@ -157,6 +157,11 @@ export default function GroupPage() {
     );
   };
 
+  // GROUP イベントの存在確認関数を追加
+  const hasAnyGroupEvents = () => {
+    return events.some(event => event.title === 'GROUP');
+  };
+
   // 日付クリック時の処理（修正済み）
   const handleDateClick = async (clickInfo) => {
     console.log('Date clicked:', clickInfo.start, clickInfo.end); // デバッグ用ログ
@@ -171,10 +176,13 @@ export default function GroupPage() {
     const end = new Date(start);
     end.setHours(end.getHours() + 1); // 1時間後を終了時間とする
 
-    // グループモードでない場合、グループイベントの確認
+    // グループモードでない場合の制御を修正
     if (!isGroupMode) {
       const hasGroup = hasGroupEventAt(start);
-      if (!hasGroup) {
+      const noGroupEvents = !hasAnyGroupEvents();
+
+      // GROUP イベントが存在しない場合はどのスロットでも選択可能
+      if (!hasGroup && !noGroupEvents) {
         alert('グループの候補時間として設定されていない時間帯は選択できません');
         return;
       }
@@ -270,10 +278,13 @@ export default function GroupPage() {
     const eventStart = event.start;
     const eventEnd = event.end;
 
-    // グループモードでない場合、グループイベントの確認
+    // グループモードでない場合の制御を修正
     if (!isGroupMode) {
       const hasGroup = hasGroupEventAt(eventStart);
-      if (!hasGroup) {
+      const noGroupEvents = !hasAnyGroupEvents();
+
+      // GROUP イベントが存在しない場合はどのスロットでも操作可能
+      if (!hasGroup && !noGroupEvents) {
         alert('グループの候補時間として設定されていない時間帯は選択できません');
         return;
       }
@@ -476,7 +487,6 @@ export default function GroupPage() {
                     return 'custom-event';
                   }
                 }}
-                eventOverlap={false}
               />
               {/* ユーザー一覧を表示 */}
               <div className="mt-4">
