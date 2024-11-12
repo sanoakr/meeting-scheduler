@@ -17,30 +17,41 @@ a {
 }
 
 .fc-timegrid-slot {
-  min-height: 80px !important; /* 1時間のスロットの高さを広げる */
+  min-height: 25px !important; /* 1時間のスロットの高さを広げる */
+  height: 25px !important; /* 時間スロットの高さを100pxに設定 */
+  padding: 2px 6px !important; /* 左右のパディングを増やし、上下を調整 */
+}
+
+.fc-timegrid-event-harness {
+  margin: 2px 6px !important; /* 左右のマージンを増やし、上下を調整 */
+  display: flex !important;
+  flex-direction: row !important; /* 横方向に変更 */
+  flex-wrap: wrap !important; /* 折り返しを有効に */
+  align-items: center !important;
+  justify-content: flex-start !important; /* 左揃えに変更 */
+  gap: 6px !important; /* アイテム間の間隔を調整 */
 }
 
 .fc-event {
   display: flex;
-  align-items: center; /* 縦方向の中央揃え */
-  justify-content: center; /* 横方向の中央揃え */
-  width: 24px;
-  height: 24px;
-  font-size: 14px;
-  border-radius: 50%; /* イベントを円形にします */
-  overflow: hidden; /* はみ出しを防ぐ */
-  padding: 0; /* パディングをリセット */
-}
-
-.fc-event * {
-  margin: 0; /* マージンをリセット */
-  padding: 0; /* パディングをリセット */
+  align-items: center;
+  justify-content: center;
+  width: 22px; /* サイズを少し大きく */
+  height: 22px;
+  font-size: 13px; /* フォントサイズを調整 */
+  font-weight: 500; /* フォントを少し太く */
+  border-radius: 50% !important; /* 円形に戻す */
+  overflow: hidden;
+  padding: 0;
+  flex-shrink: 0; /* サイズを固定 */
+  text-align: center; /* 文字を中央揃えに */
+  margin: 0 1px !important; /* 左右のマージンを追加 */
 }
 
 /* GROUPユーザーのイベントスタイル */
 .group-event {
-  background-color: rgba(255, 165, 0, 0.5) !important;
-  border: 2px solid orange !important;
+  background-color: rgba(255, 0, 0, 0.6) !important;
+  border: 1px solid rgb(0, 0, 0, 1.0) !important;
   height: 100% !important;
   width: 100% !important;
   top: 0 !important;
@@ -48,4 +59,31 @@ a {
   border-radius: 0 !important;
   box-sizing: border-box;
   pointer-events: none;
+}
+
+/* イベントのタイトル（ラベル）のスタイル */
+.fc-event-title {
+  white-space: normal !important; /* テキストの折り返しを許可 */
+  word-break: break-all !important; /* 必要に応じて単語の途中で折り返す */
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.1 !important;
+  text-align: center !重要; /* 垂直方向の中央揃え */
+  line-height: 1 !important;
+  width: 100%; /* 幅を100%に */
+  height: 100%; /* 高さを100%に */
+  display: flex !重要; /* Flexboxを使用 */
+  align-items: center !重要; /* 垂直方向の中央揃え */
+  justify-content: center !重要; /* 水平方向の中央揃え */
+  font-size: 13px !重要; /* フォントサイズを大きく */
+  font-weight: 500 !重要; /* フォントを少し太く */
+}
+
+/* 2行目以降のイベントのスタイル */
+.fc-timegrid-event-harness .fc-event:nth-child(n+2) {
+  margin-top: 0; /* リセット */
+}
+
+.fc-timegrid-event {
+  overflow: hidden !重要; /* はみ出しを隠す */
 }

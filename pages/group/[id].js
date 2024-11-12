@@ -144,6 +144,14 @@ export default function GroupPage() {
       .catch((error) => console.error('URLのコピーに失敗しました:', error));
   };
 
+  // グループイベントの存在確認関数を追加（useEffect の前に配置）
+  const hasGroupEventAt = (time) => {
+    return events.some(event => 
+      event.title === 'GROUP' && 
+      new Date(event.start).getTime() === time.getTime()
+    );
+  };
+
   // 日付クリック時の処理（修正済み）
   const handleDateClick = async (clickInfo) => {
     console.log('Date clicked:', clickInfo.start, clickInfo.end); // デバッグ用ログ
@@ -157,6 +165,15 @@ export default function GroupPage() {
     const start = clickInfo.date;
     const end = new Date(start);
     end.setHours(end.getHours() + 1); // 1時間後を終了時間とする
+
+    // グループモードでない場合、グループイベントの確認
+    if (!isGroupMode) {
+      const hasGroup = hasGroupEventAt(start);
+      if (!hasGroup) {
+        alert('グループの候補時間として設定されていない時間帯は選択できません');
+        return;
+      }
+    }
 
     // 選択された期間が1時間かどうかを確認
     const duration = (end - start) / (1000 * 60 * 60); // 時間単位で計算
@@ -247,6 +264,15 @@ export default function GroupPage() {
     const event = clickInfo.event;
     const eventStart = event.start;
     const eventEnd = event.end;
+
+    // グループモードでない場合、グループイベントの確認
+    if (!isGroupMode) {
+      const hasGroup = hasGroupEventAt(eventStart);
+      if (!hasGroup) {
+        alert('グループの候補時間として設定されていない時間帯は選択できません');
+        return;
+      }
+    }
 
     // 同じ時間帯に自分のイベントがあるか確認
     const existingEvent = events.find(e =>
@@ -458,7 +484,7 @@ export default function GroupPage() {
           {/* ユーザー名入力とグループ候補設定 */}
           <Card className="mb-4">
             <Card.Body>
-              <h5 className="mb-3">ユーザー名を入力してください</h5>
+              <h5 className="mb-3">ユーザ名を入力してください</h5>
               {!isGroupMode && (
                 <Form>
                   <Form.Group controlId="userName">
