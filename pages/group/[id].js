@@ -1,5 +1,3 @@
-// pages/group/[id].js
-
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import FullCalendar from '@fullcalendar/react';
@@ -17,6 +15,7 @@ export default function GroupPage() {
   const [results, setResults] = useState([]);
   const [isCopied, setIsCopied] = useState(false);
   const [pageUrl, setPageUrl] = useState('');
+  const [isGroupMode, setIsGroupMode] = useState(false); // 追加
 
   // ユーザー名に基づいて背景色を生成
   const getColorByUserName = (name) => {
@@ -80,11 +79,27 @@ export default function GroupPage() {
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
-            const coloredEvents = data.map(event => ({
-              ...event,
-              backgroundColor: getColorByUserName(event.title || 'Unknown User'),
-              textColor: '#fff', // テキスト色を白に設定
-            }));
+            const coloredEvents = data.map(event => {
+              let eventStyle = {
+                backgroundColor: getColorByUserName(event.title || 'Unknown User'),
+                textColor: '#fff',
+              };
+
+              // 'GROUP' ユーザーの場合のスタイルを調整
+              if (event.title === 'GROUP') {
+                eventStyle = {
+                  backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
+                  borderColor: 'orange',
+                  textColor: '', // テキストは表示しない
+                  display: 'background',
+                };
+              }
+
+              return {
+                ...event,
+                ...eventStyle,
+              };
+            });
             setEvents(coloredEvents);
           } else {
             console.warn('予期しないデータ形式:', data);
@@ -132,7 +147,9 @@ export default function GroupPage() {
   // 日付クリック時の処理（修正済み）
   const handleDateClick = async (clickInfo) => {
     console.log('Date clicked:', clickInfo.start, clickInfo.end); // デバッグ用ログ
-    if (!name.trim()) {
+    let currentName = isGroupMode ? 'GROUP' : name;
+
+    if (!currentName.trim()) {
       alert('名前を入力してください');
       return;
     }
@@ -150,7 +167,7 @@ export default function GroupPage() {
 
     // 同じユーザーが同じ時間帯に既にイベントを持っているか確認
     const existingEvent = events.find(e =>
-      e.title === name &&
+      e.title === currentName &&
       new Date(e.start).getTime() === start.getTime() &&
       new Date(e.end).getTime() === end.getTime()
     );
@@ -167,12 +184,6 @@ export default function GroupPage() {
           });
 
           if (res.ok) {
-            // カレンダーからイベントを削除
-            const calendarApi = clickInfo.view.calendar;
-            const eventToRemove = calendarApi.getEventById(existingEvent.id);
-            if (eventToRemove) {
-              eventToRemove.remove();
-            }
             setEvents(events.filter(e => e.id !== existingEvent.id));
           } else {
             const errorData = await res.json();
@@ -189,16 +200,29 @@ export default function GroupPage() {
         const res = await fetch(`/api/group/${id}/candidates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ start, end, name }),
+          body: JSON.stringify({ start, end, name: currentName }),
         });
 
         if (res.ok) {
           const data = await res.json();
           // ユーザーごとの色を設定
+          let newEventStyle = {
+            backgroundColor: getColorByUserName(currentName),
+            textColor: '#fff',
+          };
+
+          if (currentName === 'GROUP') {
+            newEventStyle = {
+              backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
+              borderColor: 'orange',
+              textColor: '',
+              display: 'background',
+            };
+          }
+
           const newEvent = {
             ...data,
-            backgroundColor: getColorByUserName(name),
-            textColor: '#fff',
+            ...newEventStyle,
           };
           setEvents([...events, newEvent]);
         } else {
@@ -214,18 +238,19 @@ export default function GroupPage() {
 
   // イベントクリック時の処理（修正済み）
   const handleEventClick = async (clickInfo) => {
-    if (!name.trim()) {
+    if (!name.trim() && !isGroupMode) {
       alert('イベントを操作するには、まず名前を入力してください。');
       return; // 名前が未入力の場合、処理を中断
     }
 
+    let currentName = isGroupMode ? 'GROUP' : name;
     const event = clickInfo.event;
     const eventStart = event.start;
     const eventEnd = event.end;
 
     // 同じ時間帯に自分のイベントがあるか確認
     const existingEvent = events.find(e =>
-      e.title === name &&
+      e.title === currentName &&
       new Date(e.start).getTime() === eventStart.getTime() &&
       new Date(e.end).getTime() === eventEnd.getTime()
     );
@@ -265,7 +290,7 @@ export default function GroupPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name,
+            name: currentName,
             start: eventStart,
             end: eventEnd,
           }),
@@ -274,10 +299,23 @@ export default function GroupPage() {
         if (res.ok) {
           const data = await res.json();
           // ユーザーごとの色を設定
+          let newEventStyle = {
+            backgroundColor: getColorByUserName(currentName),
+            textColor: '#fff',
+          };
+
+          if (currentName === 'GROUP') {
+            newEventStyle = {
+              backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
+              borderColor: 'orange',
+              textColor: '',
+              display: 'background',
+            };
+          }
+
           const newEvent = {
             ...data,
-            backgroundColor: getColorByUserName(name),
-            textColor: '#fff',
+            ...newEventStyle,
           };
           setEvents([...events, newEvent]);
         } else {
@@ -293,6 +331,10 @@ export default function GroupPage() {
 
   // カスタムイベントレンダリング関数
   function renderEventContent(eventInfo) {
+    if (eventInfo.event.title === 'GROUP') {
+      // 'GROUP' イベントの場合は何も表示しない
+      return null;
+    }
     const firstChar = eventInfo.event.title.charAt(0).toUpperCase();
     return (
       <div className="event-circle">
@@ -314,7 +356,7 @@ export default function GroupPage() {
   // ユーザー一覧を抽出
   const usersMap = new Map();
   events.forEach(event => {
-    if (event.title && event.backgroundColor) {
+    if (event.title && event.backgroundColor && event.title !== 'GROUP') {
       usersMap.set(event.title, event.backgroundColor);
     }
   });
@@ -347,6 +389,7 @@ export default function GroupPage() {
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                 slotMinWidth={30} // スロットの最小幅を設定
                 slotMaxWidth={60} // スロットの最大幅を設定
+                eventOverlap={true} // イベントの重なりを許可
                 initialView="todayWeek"
                 headerToolbar={{
                   left: 'prev,next today',
@@ -382,7 +425,13 @@ export default function GroupPage() {
                 selectMinDuration="01:00:00" // 選択の最小時間を1時間に
                 selectMaxDuration="01:00:00" // 選択の最大時間を1時間に
                 eventContent={renderEventContent} // カスタムイベントレンダリング
-                eventClassNames="custom-event" // イベントにカスタムクラスを追加
+                eventClassNames={(arg) => {
+                  if (arg.event.title === 'GROUP') {
+                    return 'group-event'; // カスタムクラスを追加
+                  } else {
+                    return 'custom-event';
+                  }
+                }}
                 eventOverlap={false}
               />
               {/* ユーザー一覧を表示 */}
@@ -406,20 +455,37 @@ export default function GroupPage() {
 
         {/* サイドバー */}
         <Col md={4}>
-          {/* ユーザー名入力 */}
+          {/* ユーザー名入力とグループ候補設定 */}
           <Card className="mb-4">
             <Card.Body>
               <h5 className="mb-3">ユーザー名を入力してください</h5>
-              <Form>
-                <Form.Group controlId="userName">
-                  <Form.Control
-                    type="text"
-                    placeholder="名前を入力"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </Form.Group>
-              </Form>
+              {!isGroupMode && (
+                <Form>
+                  <Form.Group controlId="userName">
+                    <Form.Control
+                      type="text"
+                      placeholder="名前を入力"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </Form.Group>
+                </Form>
+              )}
+              <Form.Check
+                type="switch"
+                id="group-mode-switch"
+                label="グループ候補設定"
+                checked={isGroupMode}
+                onChange={(e) => {
+                  setIsGroupMode(e.target.checked);
+                  if (e.target.checked) {
+                    setName('GROUP');
+                  } else {
+                    setName('');
+                  }
+                }}
+                className="mt-3"
+              />
             </Card.Body>
           </Card>
 
