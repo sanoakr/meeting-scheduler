@@ -17,3 +17,24 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.fc-timegrid-slot {
+  min-height: 80px !important; /* 1時間のスロットの高さを広げる */
+}
+
+.fc-event {
+  display: flex;
+  align-items: center; /* 縦方向の中央揃え */
+  justify-content: center; /* 横方向の中央揃え */
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  border-radius: 50%; /* イベントを円形にします */
+  overflow: hidden; /* はみ出しを防ぐ */
+  padding: 0; /* パディングをリセット */
+}
+
+.fc-event * {
+  margin: 0; /* マージンをリセット */
+  padding: 0; /* パディングをリセット */
+}
