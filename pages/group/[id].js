@@ -129,7 +129,7 @@ export default function GroupPage() {
       .catch((error) => console.error('URLのコピーに失敗しました:', error));
   };
 
-  // 日付クリック時の処理
+  // 日付クリック時の処理（修正済み）
   const handleDateClick = async (clickInfo) => {
     console.log('Date clicked:', clickInfo.start, clickInfo.end); // デバッグ用ログ
     if (!name.trim()) {
@@ -148,46 +148,17 @@ export default function GroupPage() {
       return;
     }
 
-    try {
-      const res = await fetch(`/api/group/${id}/candidates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ start, end, name }),
-      });
+    // 同じユーザーが同じ時間帯に既にイベントを持っているか確認
+    const existingEvent = events.find(e =>
+      e.title === name &&
+      new Date(e.start).getTime() === start.getTime() &&
+      new Date(e.end).getTime() === end.getTime()
+    );
 
-      if (res.ok) {
-        const data = await res.json();
-        // ユーザーごとの色を設定
-        const newEvent = {
-          ...data,
-          backgroundColor: getColorByUserName(name),
-          textColor: '#fff',
-        };
-        setEvents([...events, newEvent]);
-      } else {
-        const errorData = await res.json();
-        alert(`エラー: ${errorData.error}`);
-      }
-    } catch (err) {
-      alert('イベントの追加中にエラーが発生しました');
-      console.error('Error adding event:', err);
-    }
-  };
-
-  // イベントクリック時の処理
-  const handleEventClick = async (clickInfo) => {
-    if (!name.trim()) {
-      alert('イベントを操作するには、まず名前を入力してください。');
-      return; // 名前が未入力の場合、処理を中断
-    }
-
-    const event = clickInfo.event;
-    const eventStart = event.start;
-    const eventEnd = event.end;
-
-    if (event.title === name) {
-      if (confirm(`"${event.title}"のイベントを削除しますか？`)) {
-        const eventId = parseInt(event.id);
+    if (existingEvent) {
+      // イベントを削除する
+      if (confirm('この時間帯の自分のイベントを削除しますか？')) {
+        const eventId = parseInt(existingEvent.id);
         try {
           const res = await fetch(`/api/group/${id}/candidates`, {
             method: 'DELETE',
@@ -196,8 +167,13 @@ export default function GroupPage() {
           });
 
           if (res.ok) {
-            event.remove();
-            setEvents(events.filter(e => e.id !== event.id));
+            // カレンダーからイベントを削除
+            const calendarApi = clickInfo.view.calendar;
+            const eventToRemove = calendarApi.getEventById(existingEvent.id);
+            if (eventToRemove) {
+              eventToRemove.remove();
+            }
+            setEvents(events.filter(e => e.id !== existingEvent.id));
           } else {
             const errorData = await res.json();
             alert(`エラー: ${errorData.error}`);
@@ -208,44 +184,109 @@ export default function GroupPage() {
         }
       }
     } else {
-      // 他のユーザーのイベントの場合、同じ時間帯に自分の予定がないか確認して追加
-      const hasOwnEvent = events.some(e =>
-        e.title === name &&
-        new Date(e.start).getTime() === eventStart.getTime() &&
-        new Date(e.end).getTime() === eventEnd.getTime()
-      );
+      // イベントを追加する
+      try {
+        const res = await fetch(`/api/group/${id}/candidates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ start, end, name }),
+        });
 
-      if (hasOwnEvent) {
-        alert('この時間帯には既に自分の予定があります。');
-      } else {
+        if (res.ok) {
+          const data = await res.json();
+          // ユーザーごとの色を設定
+          const newEvent = {
+            ...data,
+            backgroundColor: getColorByUserName(name),
+            textColor: '#fff',
+          };
+          setEvents([...events, newEvent]);
+        } else {
+          const errorData = await res.json();
+          alert(`エラー: ${errorData.error}`);
+        }
+      } catch (err) {
+        alert('イベントの追加中にエラーが発生しました');
+        console.error('Error adding event:', err);
+      }
+    }
+  };
+
+  // イベントクリック時の処理（修正済み）
+  const handleEventClick = async (clickInfo) => {
+    if (!name.trim()) {
+      alert('イベントを操作するには、まず名前を入力してください。');
+      return; // 名前が未入力の場合、処理を中断
+    }
+
+    const event = clickInfo.event;
+    const eventStart = event.start;
+    const eventEnd = event.end;
+
+    // 同じ時間帯に自分のイベントがあるか確認
+    const existingEvent = events.find(e =>
+      e.title === name &&
+      new Date(e.start).getTime() === eventStart.getTime() &&
+      new Date(e.end).getTime() === eventEnd.getTime()
+    );
+
+    if (existingEvent) {
+      // 自分のイベントがある場合、削除する
+      if (confirm('この時間帯の自分のイベントを削除しますか？')) {
+        const eventId = parseInt(existingEvent.id);
         try {
           const res = await fetch(`/api/group/${id}/candidates`, {
-            method: 'POST',
+            method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name,
-              start: eventStart,
-              end: eventEnd,
-            }),
+            body: JSON.stringify({ eventId }),
           });
 
           if (res.ok) {
-            const data = await res.json();
-            // ユーザーごとの色を設定
-            const newEvent = {
-              ...data,
-              backgroundColor: getColorByUserName(name),
-              textColor: '#fff',
-            };
-            setEvents([...events, newEvent]);
+            // カレンダーからイベントを削除
+            const calendarApi = clickInfo.view.calendar;
+            const eventToRemove = calendarApi.getEventById(existingEvent.id);
+            if (eventToRemove) {
+              eventToRemove.remove();
+            }
+            setEvents(events.filter(e => e.id !== existingEvent.id));
           } else {
             const errorData = await res.json();
             alert(`エラー: ${errorData.error}`);
           }
         } catch (err) {
-          alert('イベントの追加中にエラーが発生しました');
-          console.error('Error adding event:', err);
+          alert('イベントの削除中にエラーが発生しました');
+          console.error('Error deleting event:', err);
         }
+      }
+    } else {
+      // 自分のイベントがない場合、追加する
+      try {
+        const res = await fetch(`/api/group/${id}/candidates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            start: eventStart,
+            end: eventEnd,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          // ユーザーごとの色を設定
+          const newEvent = {
+            ...data,
+            backgroundColor: getColorByUserName(name),
+            textColor: '#fff',
+          };
+          setEvents([...events, newEvent]);
+        } else {
+          const errorData = await res.json();
+          alert(`エラー: ${errorData.error}`);
+        }
+      } catch (err) {
+        alert('イベントの追加中にエラーが発生しました');
+        console.error('Error adding event:', err);
       }
     }
   };
@@ -327,9 +368,9 @@ export default function GroupPage() {
                 }}
                 selectable={true}
                 selectAllow={selectAllow} // 選択許可関数を追加
-                dateClick={handleDateClick} // 追加
+                dateClick={handleDateClick} // 修正済みのハンドラを使用
                 events={events}
-                eventClick={handleEventClick}
+                eventClick={handleEventClick} // 修正済みのハンドラを使用
                 displayEventTime={false} // 時間表示を無効化
                 height="auto" // 高さを自動調整
                 aspectRatio={1.5} // 幅と高さの比率を調整
@@ -348,7 +389,12 @@ export default function GroupPage() {
               <div className="mt-4">
                 <div className="d-flex flex-wrap">
                   {users.map(([userName, color], index) => (
-                    <div key={index} className="mb-2 me-2 px-3 py-1 rounded" style={{ backgroundColor: color }}>
+                    <div
+                      key={index}
+                      className="mb-2 me-2 px-3 py-1 rounded"
+                      style={{ backgroundColor: color, cursor: 'pointer' }}
+                      onClick={() => setName(userName)}
+                    >
                       <span>{userName}</span>
                     </div>
                   ))}
