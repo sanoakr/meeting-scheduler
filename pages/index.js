@@ -14,7 +14,8 @@ export default function HomePage() {
       return;
     }
 
-    const res = await fetch('/api/create-group', {
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    const res = await fetch(`${basePath}/api/create-group`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: groupName }),

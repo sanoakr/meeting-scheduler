@@ -5,6 +5,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { Container, Row, Col, Button, Alert, Card, Form, Badge } from 'react-bootstrap';
+import { getApiUrl } from '../../utils/api';
 
 export default function GroupPage() {
   const router = useRouter();
@@ -16,6 +17,17 @@ export default function GroupPage() {
   const [isCopied, setIsCopied] = useState(false);
   const [pageUrl, setPageUrl] = useState('');
   const [isGroupMode, setIsGroupMode] = useState(false); // 追加
+
+  // クライアントサイドでのみ URL を設定（修正）
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+      setPageUrl(`${window.location.origin}${basePath}${router.asPath}`);
+    }
+  }, [router.asPath]);
+
+  // APIエンドポイントのベースパスを設定
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
   // ユーザー名に基づいて背景色を生成
   const getColorByUserName = (name) => {
@@ -56,10 +68,10 @@ export default function GroupPage() {
     return new Date(dateString).toLocaleTimeString('ja-JP', options);
   };
 
-  // グループ名を取得
+  // グループ名を取得（修正）
   useEffect(() => {
     if (id) {
-      fetch(`/api/group/${id}`)
+      fetch(getApiUrl(`/api/group/${id}`))
         .then((res) => res.json())
         .then((data) => {
           if (data.name) {
@@ -70,12 +82,12 @@ export default function GroupPage() {
         })
         .catch((error) => console.error('Error fetching group name:', error));
     }
-  }, [id]);
+  }, [id, basePath]);
 
-  // 候補日データを取得し、色を割り当てる
+  // 候補日データを取得し、色を割り当てる（修正）
   useEffect(() => {
     if (id) {
-      fetch(`/api/group/${id}/candidates`)
+      fetch(getApiUrl(`/api/group/${id}/candidates`))
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -108,12 +120,12 @@ export default function GroupPage() {
         })
         .catch((error) => console.error('Error fetching candidates:', error));
     }
-  }, [id]);
+  }, [id, basePath]);
 
-  // 最終候補日データを取得
+  // 最終候補日データを取得（修正）
   useEffect(() => {
     if (id) {
-      fetch(`/api/group/${id}/results`)
+      fetch(getApiUrl(`/api/group/${id}/results`))
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -125,14 +137,7 @@ export default function GroupPage() {
         })
         .catch((error) => console.error('Error fetching results:', error));
     }
-  }, [id, events]);
-
-  // クライアントサイドでのみ URL を設定
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setPageUrl(window.location.href);
-    }
-  }, []);
+  }, [id, events, basePath]);
 
   // URL をクリップボードにコピー
   const handleCopyUrl = () => {
@@ -194,7 +199,7 @@ export default function GroupPage() {
       if (confirm('この時間帯の自分のイベントを削除しますか？')) {
         const eventId = parseInt(existingEvent.id);
         try {
-          const res = await fetch(`/api/group/${id}/candidates`, {
+          const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ eventId }),
@@ -214,7 +219,7 @@ export default function GroupPage() {
     } else {
       // イベントを追加する
       try {
-        const res = await fetch(`/api/group/${id}/candidates`, {
+        const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ start, end, name: currentName }),
@@ -286,7 +291,7 @@ export default function GroupPage() {
       if (confirm('この時間帯の自分のイベントを削除しますか？')) {
         const eventId = parseInt(existingEvent.id);
         try {
-          const res = await fetch(`/api/group/${id}/candidates`, {
+          const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ eventId }),
@@ -312,7 +317,7 @@ export default function GroupPage() {
     } else {
       // 自分のイベントがない場合、追加する
       try {
-        const res = await fetch(`/api/group/${id}/candidates`, {
+        const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
