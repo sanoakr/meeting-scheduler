@@ -32,13 +32,13 @@ export default function GroupPage() {
   // ユーザー名に基づいて背景色を生成
   const getColorByUserName = (name) => {
     const colors = [
-      '#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#C5CAE9', '#BBDEFB',
-      '#B3E5FC', '#B2EBF2', '#B2DFDB', '#C8E6C9', '#DCEDC8', '#F0F4C3',
-      '#FFF9C4', '#FFECB3', '#FFE0B2', '#FFCCBC',
-      // 新しい色を追加
-      '#FFAB91', '#FFCC80', '#FFE082', '#FFF59D', '#E6EE9C', '#C5E1A5',
-      '#A5D6A7', '#80CBC4', '#80DEEA', '#81D4FA', '#90CAF9', '#9FA8DA',
-      '#A5A9E6', '#CE93D8', '#F48FB1', '#FFAB91'
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
+      '#D4A5A5', '#9B59B6', '#3498DB', '#1ABC9C', '#F1C40F',
+      '#E74C3C', '#2ECC71', '#E67E22', '#7F8C8D', '#C0392B',
+      '#8E44AD', '#F39C12', '#16A085', '#D35400', '#27AE60',
+      '#2980B9', '#E84393', '#6C5CE7', '#00B894', '#00CEC9',
+      '#FD79A8', '#6C5CE7', '#FDA7DF', '#A8E6CF', '#DCEDC1',
+      '#FFD3B6', '#FF8B94', '#B83B5E', '#6A2C70', '#08D9D6'
     ];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -235,7 +235,7 @@ export default function GroupPage() {
 
         if (res.ok) {
           const data = await res.json();
-          // ユーザーごとの色を設定
+          // ユーザーごとの色を��定
           let newEventStyle = {
             backgroundColor: getColorByUserName(currentName),
             textColor: '#fff',
