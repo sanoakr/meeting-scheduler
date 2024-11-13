@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Row, Col, Button, Form, Card } from 'react-bootstrap';
+import { version } from '../version';
 
 export default function HomePage({ version }) {
   const router = useRouter();
