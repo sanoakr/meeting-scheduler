@@ -23,6 +23,7 @@ export async function getServerSideProps(context) {
     },
   };
 }
+import { version } from '../../version';
 
 export default function GroupPage({ version }) {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function GroupPage({ version }) {
     }
   }, [router.asPath]);
   
-  // APIエンドポイントのベースパスを設定
+  // APIエンドポイントのベースパ���を設定
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   
   // ユーザー名に基づいて背景色を生成
@@ -266,7 +267,7 @@ export default function GroupPage({ version }) {
       return;
     }
     
-    // 同じユーザーが同じ時間帯に既にイベントを持っているか確認
+    // 同じユーザーが同じ時間帯に既にイベントを持っているか確��
     const existingEvent = events.find(e =>
       e.title === currentName &&
       new Date(e.start).getTime() === start.getTime() &&
@@ -630,7 +631,7 @@ export default function GroupPage({ version }) {
     snapDuration="01:00:00"  // スナップを1時間単位に
     selectMinDuration="01:00:00" // 選択の最小時間を1時間に
     selectMaxDuration="01:00:00" // 選択の最大時間を1時間に
-    eventContent={renderEventContent} // カスタムイベントレンダリング
+    eventContent={renderEventContent} // カ��タムイベントレンダリング
     eventClassNames={(arg) => {
       if (arg.event.title === 'GROUP') {
         return 'group-event'; // カスタムクラスを追加
@@ -718,9 +719,10 @@ export default function GroupPage({ version }) {
     </div>
     </Card.Body>
     </Card>
+        <div style={{ textAlign: 'right', color: 'gray', fontSize: 'small' }}>Version: {version}
+          </div>
     </Col>
-    
-    {/* サイドバー */}
+        {/* サイドバー */}
     <Col md={4}>
     {/* ユーザー名入力とグループ候補設定 */}
     <Card className="mb-4">
@@ -741,7 +743,7 @@ export default function GroupPage({ version }) {
     <Form.Check
     type="switch"
     id="group-mode-switch"
-    label="グループ候補設定"
+    label="グループ指定：入力可能日時が制限されます"
     checked={isGroupMode}
     onChange={(e) => {
       setIsGroupMode(e.target.checked);
@@ -826,7 +828,6 @@ export default function GroupPage({ version }) {
     </Card>
     </Col>
     </Row>
-    
-    </Container>
+      </Container>
 );
 }
