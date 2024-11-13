@@ -530,7 +530,7 @@ export default function GroupPage() {
               <Form.Check
                 type="switch"
                 id="group-mode-switch"
-                label="グループ候補設定"
+                label="グループ指定：入力可能日時が制限されます"
                 checked={isGroupMode}
                 onChange={(e) => {
                   setIsGroupMode(e.target.checked);
