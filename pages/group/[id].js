@@ -6,8 +6,25 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { Container, Row, Col, Button, Alert, Card, Form, Badge } from 'react-bootstrap';
 import { getApiUrl } from '../../utils/api';
+import fs from 'fs';
+import path from 'path';
 
-export default function GroupPage() {
+export async function getServerSideProps(context) {
+  const { id } = context.params;
+  const versionFilePath = path.join(process.cwd(), 'version.txt');
+  const version = fs.readFileSync(versionFilePath, 'utf8').trim();
+
+  // ...既存のデータ取得処理...
+
+  return {
+    props: {
+      version,
+      // ...existing props...
+    },
+  };
+}
+
+export default function GroupPage({ version }) {
   const router = useRouter();
   const { id } = router.query;
   const [groupName, setGroupName] = useState('');
@@ -17,6 +34,8 @@ export default function GroupPage() {
   const [isCopied, setIsCopied] = useState(false);
   const [pageUrl, setPageUrl] = useState('');
   const [isGroupMode, setIsGroupMode] = useState(false); // 追加
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
 
   // クライアントサイドでのみ URL を設定（修正）
   useEffect(() => {
@@ -114,7 +133,7 @@ export default function GroupPage() {
             });
             setEvents(coloredEvents);
           } else {
-            console.warn('予期しないデータ形式:', data);
+            console.warn('予期しないデ��タ形式:', data);
             setEvents([]);
           }
         })
@@ -138,6 +157,27 @@ export default function GroupPage() {
         .catch((error) => console.error('Error fetching results:', error));
     }
   }, [id, events, basePath]);
+
+  useEffect(() => {
+    if (id) {
+      fetch(getApiUrl(`/api/group/${id}/comments`))
+        .then(res => res.json())
+        .then(data => {
+          console.log('Fetched comments:', data); // デバッグ用にコンソール出力
+
+          if (Array.isArray(data)) {
+            setComments(data);
+          } else {
+            console.error('コメントのデータ形式が不正です:', data);
+            setComments([]); // データ形式が不正な場合は空の配列をセット
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching comments:', error);
+          setComments([]); // エラー発生時も空の配列をセット
+        });
+    }
+  }, [id]);
 
   // URL をクリップボードにコピー
   const handleCopyUrl = () => {
@@ -421,6 +461,37 @@ export default function GroupPage() {
     return duration === 1;
   };
 
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      alert('コメントを投稿するには名前を入力してください');
+      return;
+    }
+    if (!newComment.trim()) {
+      alert('コメントを入力してください');
+      return;
+    }
+
+    try {
+      const res = await fetch(getApiUrl(`/api/group/${id}/comments`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newComment, name }),
+      });
+
+      if (res.ok) {
+        const comment = await res.json();
+        setComments([comment, ...comments]);
+        setNewComment('');
+      } else {
+        alert('コメントの投稿に失敗しました');
+      }
+    } catch (err) {
+      console.error('Error posting comment:', err);
+      alert('コメントの投稿中にエラーが発生しました');
+    }
+  };
+
   return (
     <Container className="mt-5">
       {/* グループ名とURL */}
@@ -470,7 +541,7 @@ export default function GroupPage() {
                 }}
                 selectable={true}
                 selectAllow={selectAllow} // 選択許可関数を追加
-                dateClick={handleDateClick} // ���正済みのハンドラを使用
+                dateClick={handleDateClick} // 修正済みのハンドラを使用
                 events={events}
                 eventClick={handleEventClick} // 修正済みのハンドラを使用
                 displayEventTime={false} // 時間表示を無効化
@@ -509,11 +580,78 @@ export default function GroupPage() {
               </div>
             </Card.Body>
           </Card>
+          <div className="text-end mt-2" style={{ fontSize: '0.8rem', color: '#6c757d' }}>
+            {version}
+          </div>
+          <Card className="mt-4">
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h5 className="mb-0">コメント</h5>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={!newComment.trim()}
+                  onMouseOver={() => {
+                    if (!name.trim()) {
+                      alert('ユーザー名の入力が必要');
+                    }
+                  }}
+                  form="commentForm" // フォームのIDを指定
+                >
+                  投稿
+                </Button>
+              </div>
+
+              {/* コメント入力フォーム */}
+              <Form id="commentForm" onSubmit={handleAddComment} className="mb-3">
+                <Form.Group>
+                  <Form.Control
+                    as="textarea"
+                    rows={2} // 行数を減らしてコンパクトに
+                    placeholder="コメントを入力"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                  />
+                </Form.Group>
+              </Form>
+
+              {/* コメントリスト */}
+              <div>
+                {comments.map((comment) => (
+                  <div key={comment.id} className="mb-3 border-bottom pb-2">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <div className="d-flex align-items-center">
+                        <div
+                          className="rounded-circle me-2"
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            backgroundColor: getColorByUserName(comment.name),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff'
+                          }}
+                        >
+                          {comment.name.charAt(0).toUpperCase()}
+                        </div>
+                        <strong>{comment.name}</strong>
+                      </div>
+                      <small className="text-muted">
+                        {formatDateWithWeekday(comment.createdAt)}
+                      </small>
+                    </div>
+                    <p className="mb-1">{comment.text}</p>
+                  </div>
+                ))}
+              </div>
+            </Card.Body>
+          </Card>
         </Col>
 
         {/* サイドバー */}
         <Col md={4}>
-          {/* ユーザー名入���とグループ候補設定 */}
+          {/* ユーザー名入力とグループ候補設定 */}
           <Card className="mb-4">
             <Card.Body>
               <h5 className="mb-3">ユーザ名を入力してください</h5>
@@ -547,7 +685,7 @@ export default function GroupPage() {
             </Card.Body>
           </Card>
 
-          {/* 最終候補日 */}
+          {/* ��終候補日 */}
           <Card>
             <Card.Body>
               <h5 className="mb-3">最終候補日</h5>

@@ -3,8 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Row, Col, Button, Form, Card } from 'react-bootstrap';
+import fs from 'fs';
+import path from 'path';
 
-export default function HomePage() {
+export async function getStaticProps() {
+  const versionFilePath = path.join(process.cwd(), 'version.txt');
+  const version = fs.readFileSync(versionFilePath, 'utf8').trim();
+
+  return {
+    props: {
+      version,
+    },
+  };
+}
+
+export default function HomePage({ version }) {
   const router = useRouter();
   const [groupName, setGroupName] = useState('');
 
@@ -55,6 +68,9 @@ export default function HomePage() {
                   グループ作成
                 </Button>
               </Form>
+              <div className="text-end mt-2" style={{ fontSize: '0.8rem', color: '#6c757d' }}>
+                {version}
+              </div>
             </Card.Body>
           </Card>
         </Col>

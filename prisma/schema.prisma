@@ -18,9 +18,19 @@ model Candidate {
   group         Group     @relation(fields: [groupId], references: [id])
 }
 
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  name      String
+  createdAt DateTime @default(now())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id])
+}
+
 model Group {
   id          String      @id
   name        String      // グループ名フィールドを追加
   createdAt   DateTime    @default(now())
   candidates  Candidate[]
+  comments    Comment[]   // 関係を追加
 }
