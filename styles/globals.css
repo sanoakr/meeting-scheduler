@@ -26,7 +26,7 @@ a {
   margin: 2px 6px !important; /* 左右のマージンを増やし、上下を調整 */
   display: flex !important;
   flex-direction: row !important; /* 横方向に変更 */
-  flex-wrap: wrap !重要; /* 折り返しを有効に */
+  flex-wrap: wrap !important; /* 折り返しを有効に */
   align-items: center !important;
   justify-content: flex-start !important; /* 左揃えに変更 */
   gap: 6px !important; /* アイテム間の間隔を調整 */
