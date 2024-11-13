@@ -6,6 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { Container, Row, Col, Button, Alert, Card, Form, Badge } from 'react-bootstrap';
 import { getApiUrl } from '../../utils/api';
+import { version } from '../../version';
 
 export default function GroupPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function GroupPage() {
   const [pageUrl, setPageUrl] = useState('');
   const [isGroupMode, setIsGroupMode] = useState(false); // 追加
 
-  // クライアントサイドでのみ URL を設定（修正）
+  // クライアントサイドでの URL を設定（修正）
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
@@ -26,7 +27,7 @@ export default function GroupPage() {
     }
   }, [router.asPath]);
 
-  // APIエンドポイントのベースパスを設定
+  // APIエンドポイントのベースパ���を設定
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
   // ユーザー名に基づいて背景色を生成
@@ -195,7 +196,7 @@ export default function GroupPage() {
       return;
     }
 
-    // 同じユーザーが同じ時間帯に既にイベントを持っているか確認
+    // 同じユーザーが同じ時間帯に既にイベントを持っているか確��
     const existingEvent = events.find(e =>
       e.title === currentName &&
       new Date(e.start).getTime() === start.getTime() &&
@@ -479,7 +480,7 @@ export default function GroupPage() {
                 snapDuration="01:00:00"  // スナップを1時間単位に
                 selectMinDuration="01:00:00" // 選択の最小時間を1時間に
                 selectMaxDuration="01:00:00" // 選択の最大時間を1時間に
-                eventContent={renderEventContent} // カスタムイベントレンダリング
+                eventContent={renderEventContent} // カ��タムイベントレンダリング
                 eventClassNames={(arg) => {
                   if (arg.event.title === 'GROUP') {
                     return 'group-event'; // カスタムクラスを追加
@@ -505,8 +506,9 @@ export default function GroupPage() {
               </div>
             </Card.Body>
           </Card>
+        <div style={{ textAlign: 'right', color: 'gray', fontSize: 'small' }}>Version: {version}
+          </div>
         </Col>
-
         {/* サイドバー */}
         <Col md={4}>
           {/* ユーザー名入力とグループ候補設定 */}
@@ -589,7 +591,6 @@ export default function GroupPage() {
           </Card>
         </Col>
       </Row>
-
-    </Container>
+  </Container>
   );
 }
