@@ -162,6 +162,35 @@ export default function GroupPage() {
     return events.some(event => event.title === 'GROUP');
   };
 
+  // ユーザー一覧を取得する関数（先に定義）
+  const getUsersForTimeSlot = (startTime) => {
+    return events
+      .filter(event => 
+        new Date(event.start).getTime() === new Date(startTime).getTime() &&
+        event.title !== 'GROUP'  // GROUP を除外
+      )
+      .map(event => ({
+        name: event.title,
+        color: event.backgroundColor
+      }));
+  };
+
+  // 候補日の最大人数を計算（GROUP を除外）
+  const maxCount = results.length > 0 ? 
+    Math.max(...results.map(r => {
+      const users = getUsersForTimeSlot(r.startDateTime);
+      return users.length;  // GROUP を除外した実際のユーザー数
+    })) : 0;
+
+  // ユーザー一覧を抽出
+  const usersMap = new Map();
+  events.forEach(event => {
+    if (event.title && event.backgroundColor && event.title !== 'GROUP') {
+      usersMap.set(event.title, event.backgroundColor);
+    }
+  });
+  const users = Array.from(usersMap.entries()); // [ユーザー名, 色] の配列
+
   // 日付クリック時の処理（修正済み）
   const handleDateClick = async (clickInfo) => {
     console.log('Date clicked:', clickInfo.start, clickInfo.end); // デバッグ用ログ
@@ -235,7 +264,7 @@ export default function GroupPage() {
 
         if (res.ok) {
           const data = await res.json();
-          // ユーザーごとの色を��定
+          // ユーザーごとの色を設定
           let newEventStyle = {
             backgroundColor: getColorByUserName(currentName),
             textColor: '#fff',
@@ -392,31 +421,6 @@ export default function GroupPage() {
     return duration === 1;
   };
 
-  // 候補日の最大人数を計算
-  const maxCount = results.length > 0 ? Math.max(...results.map(r => r._count.id)) : 0;
-
-  // ユーザー一覧を抽出
-  const usersMap = new Map();
-  events.forEach(event => {
-    if (event.title && event.backgroundColor && event.title !== 'GROUP') {
-      usersMap.set(event.title, event.backgroundColor);
-    }
-  });
-  const users = Array.from(usersMap.entries()); // [ユーザー名, 色] の配列
-
-  // ユーザー一覧を取得する関数を追加
-  const getUsersForTimeSlot = (startTime) => {
-    return events
-      .filter(event => 
-        new Date(event.start).getTime() === new Date(startTime).getTime() &&
-        event.title !== 'GROUP'
-      )
-      .map(event => ({
-        name: event.title,
-        color: event.backgroundColor
-      }));
-  };
-
   return (
     <Container className="mt-5">
       {/* グループ名とURL */}
@@ -466,7 +470,7 @@ export default function GroupPage() {
                 }}
                 selectable={true}
                 selectAllow={selectAllow} // 選択許可関数を追加
-                dateClick={handleDateClick} // 修正済みのハンドラを使用
+                dateClick={handleDateClick} // ���正済みのハンドラを使用
                 events={events}
                 eventClick={handleEventClick} // 修正済みのハンドラを使用
                 displayEventTime={false} // 時間表示を無効化
@@ -509,7 +513,7 @@ export default function GroupPage() {
 
         {/* サイドバー */}
         <Col md={4}>
-          {/* ユーザー名入力とグループ候補設定 */}
+          {/* ユーザー名入���とグループ候補設定 */}
           <Card className="mb-4">
             <Card.Body>
               <h5 className="mb-3">ユーザ名を入力してください</h5>
@@ -549,8 +553,9 @@ export default function GroupPage() {
               <h5 className="mb-3">最終候補日</h5>
               <ul className="list-unstyled">
                 {results.map((result, index) => {
-                  const isMax = result._count.id === maxCount;
                   const users = getUsersForTimeSlot(result.startDateTime);
+                  const userCount = users.length;  // GROUP を除外したユーザー数
+                  const isMax = userCount === maxCount;
                   return (
                     <React.Fragment key={index}>
                       <li className={`mb-2 d-flex justify-content-between align-items-center p-2 rounded ${isMax ? 'bg-warning text-dark' : ''}`}>
@@ -558,7 +563,7 @@ export default function GroupPage() {
                           {formatDateWithWeekday(result.startDateTime)} - {formatTime(result.endDateTime)}
                         </span>
                         <span>
-                          {result._count.id}人
+                          {userCount}人  {/* result._count.id の代わりに userCount を使用 */}
                           {isMax && <Badge bg="secondary" className="ms-2">最も多い</Badge>}
                         </span>
                       </li>
