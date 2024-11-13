@@ -119,3 +119,48 @@ a {
 .comment-text {
   font-size: 0.85rem;
 }
+
+/* ダウンロードボタンのスタイルをコンパクトに */
+button.mt-2.mb-2 {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* ics トグルスイッチのスタイルをコンパクトに */
+.final-date-time {
+  font-size: 0.9rem; /* フォントサイズを少し小さく */
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.2rem 0; /* パディングを縮小 */
+}
+
+/* ユーザー数表示のスタイルを追加 */
+.user-count {
+  white-space: nowrap; /* 改行を防ぐ */
+  margin-right: 0.5rem;
+  font-size: 0.9rem; /* フォントサイズを小さく */
+}
+
+/* 最終候補日のリストアイテムのスタイル */
+li.mb-2 {
+  margin-bottom: 0.3rem !important; /* 項目間の余白を縮小 */
+  padding: 0.3rem 0.5rem !important; /* パディングを縮小 */
+}
+
+/* ユーザーリストの調整 */
+.gap-2 {
+  gap: 0.3rem !important; /* ユーザー間の間隔を縮小 */
+}
+
+/* ユーザー名タグのスタイル調整 */
+.px-2.py-1.rounded {
+  padding: 0.15rem 0.5rem !important; /* パディングを縮小 */
+  font-size: 0.85rem !important; /* フォントサイズを小さく */
+}
+
+/* 「最も多い」バッジの調整 */
+.badge {
+  font-size: 0.75rem !important;
+  padding: 0.2em 0.4em !important;
+}
