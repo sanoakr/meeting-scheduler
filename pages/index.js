@@ -4,6 +4,20 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Row, Col, Button, Form, Card } from 'react-bootstrap';
 import { version } from '../version';
+import fs from 'fs';
+import path from 'path';
+
+// サーバーサイドでバージョンを取得するための関数を追加
+export async function getServerSideProps() {
+  const versionFilePath = path.join(process.cwd(), 'version.txt');
+  const version = fs.readFileSync(versionFilePath, 'utf8').trim();
+
+  return {
+    props: {
+      version,
+    },
+  };
+}
 
 export default function HomePage({ version }) {
   const router = useRouter();
@@ -59,7 +73,7 @@ export default function HomePage({ version }) {
     </Card.Body>
     </Card>
     <div style={{ textAlign: 'right', color: 'gray', fontSize: 'small' }}>
-    Version: {version}
+    ver. {version}
     </div>
     </Col>
     </Row>

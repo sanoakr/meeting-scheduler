@@ -23,7 +23,6 @@ export async function getServerSideProps(context) {
     },
   };
 }
-import { version } from '../../version';
 
 export default function GroupPage({ version }) {
   const router = useRouter();
@@ -658,7 +657,7 @@ export default function GroupPage({ version }) {
     </Card.Body>
     </Card>
     <div className="text-end mt-2" style={{ fontSize: '0.8rem', color: '#6c757d' }}>
-    {version}
+    ver. {version}
     </div>
     <Card className="mt-4">
     <Card.Body>
@@ -719,8 +718,6 @@ export default function GroupPage({ version }) {
     </div>
     </Card.Body>
     </Card>
-        <div style={{ textAlign: 'right', color: 'gray', fontSize: 'small' }}>Version: {version}
-          </div>
     </Col>
         {/* サイドバー */}
     <Col md={4}>
