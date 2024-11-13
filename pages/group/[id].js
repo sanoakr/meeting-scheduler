@@ -133,7 +133,7 @@ export default function GroupPage({ version }) {
             });
             setEvents(coloredEvents);
           } else {
-            console.warn('予期しないデ��タ形式:', data);
+            console.warn('予期しないデータ形式:', data);
             setEvents([]);
           }
         })
@@ -611,6 +611,7 @@ export default function GroupPage({ version }) {
                     placeholder="コメントを入力"
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
+                    className="comment-textarea" // クラス名を追加
                   />
                 </Form.Group>
               </Form>
@@ -618,30 +619,24 @@ export default function GroupPage({ version }) {
               {/* コメントリスト */}
               <div>
                 {comments.map((comment) => (
-                  <div key={comment.id} className="mb-3 border-bottom pb-2">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
+                  <div key={comment.id} className="mb-2 border-bottom pb-1">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
                       <div className="d-flex align-items-center">
                         <div
-                          className="rounded-circle me-2"
+                          className="rounded-circle me-2 comment-icon"
                           style={{
-                            width: '24px',
-                            height: '24px',
                             backgroundColor: getColorByUserName(comment.name),
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#fff'
                           }}
                         >
                           {comment.name.charAt(0).toUpperCase()}
                         </div>
-                        <strong>{comment.name}</strong>
+                        <strong className="comment-name">{comment.name}</strong>
                       </div>
-                      <small className="text-muted">
+                      <small className="text-muted comment-date">
                         {formatDateWithWeekday(comment.createdAt)}
                       </small>
                     </div>
-                    <p className="mb-1">{comment.text}</p>
+                    <p className="mb-0 comment-text">{comment.text}</p>
                   </div>
                 ))}
               </div>
@@ -685,7 +680,7 @@ export default function GroupPage({ version }) {
             </Card.Body>
           </Card>
 
-          {/* ��終候補日 */}
+          {/* 最終候補日 */}
           <Card>
             <Card.Body>
               <h5 className="mb-3">最終候補日</h5>

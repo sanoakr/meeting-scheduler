@@ -26,7 +26,7 @@ a {
   margin: 2px 6px !important; /* 左右のマージンを増やし、上下を調整 */
   display: flex !important;
   flex-direction: row !important; /* 横方向に変更 */
-  flex-wrap: wrap !important; /* 折り返しを有効に */
+  flex-wrap: wrap !重要; /* 折り返しを有効に */
   align-items: center !important;
   justify-content: flex-start !important; /* 左揃えに変更 */
   gap: 6px !important; /* アイテム間の間隔を調整 */
@@ -50,8 +50,8 @@ a {
 
 /* GROUPユーザーのイベントスタイル */
 .group-event {
-  background-color: rgba(255, 0, 0, 0.6) !important;
-  border: 1px solid rgb(0, 0, 0, 1.0) !important;
+  background-color: rgba(255, 165, 0, 0.5) !important;
+  border: 1px solid rgba(0, 0, 0, 1.0) !important;
   height: 100% !important;
   width: 100% !important;
   top: 0 !important;
@@ -86,4 +86,36 @@ a {
 
 .fc-timegrid-event {
   overflow: hidden !important; /* はみ出しを隠す */
+}
+
+/* コメント入力フォームのフォントサイズを小さく */
+.comment-textarea {
+  font-size: 0.85rem;
+}
+
+/* コメントアイコンのスタイル */
+.comment-icon {
+  width: 20px;
+  height: 20px;
+  background-color: var(--user-color); /* 動的に設定 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+/* コメント名のフォントサイズを小さく */
+.comment-name {
+  font-size: 0.85rem;
+}
+
+/* コメント日時のフォントサイズをさらに小さく */
+.comment-date {
+  font-size: 0.7rem;
+}
+
+/* コメントテキストのフォントサイズを小さく */
+.comment-text {
+  font-size: 0.85rem;
 }
