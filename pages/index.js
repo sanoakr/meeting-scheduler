@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Row, Col, Button, Form, Card } from 'react-bootstrap';
 // import { version } from '../version'; // 削除
+import { getApiUrl } from '../utils/api'; // 追加
 
 import fs from 'fs';
 import path from 'path';
@@ -30,7 +31,7 @@ export default function HomePage({ version }) { // version を props から受�
     }
 
     try {
-      const res = await fetch('/api/create-group', {
+      const res = await fetch(getApiUrl('/api/create-group'), { // 変更箇所
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: groupName }),
@@ -38,7 +39,7 @@ export default function HomePage({ version }) { // version を props から受�
 
       if (res.ok) {
         const { groupId } = await res.json();
-        // グループ作成���にページ遷移
+        // グループ作成後にページ遷移
         router.push(`/group/${groupId}`);
       } else {
         const errorData = await res.json();
