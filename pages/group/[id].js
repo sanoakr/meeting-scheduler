@@ -20,14 +20,29 @@ import {
 
 export async function getServerSideProps(context) {
   const { id } = context.params;
+  
+  // プロトコルとホスト名を取得してベース URL を構築
+  const protocol = context.req.headers['x-forwarded-proto'] || 'http';
+  const host = context.req.headers['host'];
+  const baseUrl = `${protocol}://${host}`;
+  
+  const res = await fetch(`${baseUrl}/api/group/${id}`);
+  const data = await res.json();
+
+  if (res.status !== 200 || !data.name) {
+    // グループが存在しない場合、404エラーページを表示
+    return {
+      notFound: true,
+    };
+  }
+
   const versionFilePath = path.join(process.cwd(), 'version.txt');
   const version = fs.readFileSync(versionFilePath, 'utf8').trim();
-  
-  // ...既存のデータ取得処理...
   
   return {
     props: {
       version,
+      groupName: data.name,
       // ...existing props...
     },
   };
@@ -266,7 +281,7 @@ export default function GroupPage({ version }) {
         }
       }
     } else {
-      // イベント���追加する
+      // イベントを追加する
       try {
         const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
           method: 'POST',
@@ -440,7 +455,7 @@ export default function GroupPage({ version }) {
       return;
     }
     if (!newComment.trim()) {
-      alert('コメントを入力してく��さい');
+      alert('コメントを入力してください');
       return;
     }
     

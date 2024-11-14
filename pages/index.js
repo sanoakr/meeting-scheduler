@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Row, Col, Button, Form, Card } from 'react-bootstrap';
-import { version } from '../version';
+// import { version } from '../version'; // 削除
+
 import fs from 'fs';
 import path from 'path';
 
-// サーバーサイドでバージョンを取得するための関数を追加
 export async function getServerSideProps() {
   const versionFilePath = path.join(process.cwd(), 'version.txt');
   const version = fs.readFileSync(versionFilePath, 'utf8').trim();
@@ -19,7 +19,7 @@ export async function getServerSideProps() {
   };
 }
 
-export default function HomePage({ version }) {
+export default function HomePage({ version }) { // version を props から受け取る
   const router = useRouter();
   const [groupName, setGroupName] = useState('');
   
@@ -28,55 +28,60 @@ export default function HomePage({ version }) {
       alert('グループ名を入力してください');
       return;
     }
-    
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-    const res = await fetch(`${basePath}/api/create-group`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: groupName }),
-    });
-    
-    if (res.ok) {
-      const { groupId } = await res.json();
-      router.push(`/group/${groupId}`);
-    } else {
-      const errorData = await res.json();
-      alert(`エラー: ${errorData.error}`);
+
+    try {
+      const res = await fetch('/api/create-group', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: groupName }),
+      });
+
+      if (res.ok) {
+        const { groupId } = await res.json();
+        // グループ作成���にページ遷移
+        router.push(`/group/${groupId}`);
+      } else {
+        const errorData = await res.json();
+        alert(`エラー: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('グループ作成中にエラーが発生しました:', error);
+      alert('グループ作成に失敗しました');
     }
   };
   
   return (
     <Container className="mt-5">
-    <Row className="justify-content-center">
-    <Col md={8} lg={6}>
-    <Card>
-    <Card.Body>
-    <h1 className="text-center mb-4">ミーティングスケジューラ（仮）</h1>
-    <Form>
-    <Form.Group controlId="groupName">
-    <Form.Label>グループ名</Form.Label>
-    <Form.Control
-    type="text"
-    placeholder="グループ名を入力してください"
-    value={groupName}
-    onChange={(e) => setGroupName(e.target.value)}
-    />
-    </Form.Group>
-    <Button
-    variant="primary"
-    className="mt-3 w-100"
-    onClick={handleCreateGroup}
-    >
-    グループ作成
-    </Button>
-    </Form>
-    </Card.Body>
-    </Card>
-    <div style={{ textAlign: 'right', color: 'gray', fontSize: 'small' }}>
-    ver. {version}
-    </div>
-    </Col>
-    </Row>
+      <Row className="justify-content-center">
+        <Col md={8} lg={6}>
+          <Card>
+            <Card.Body>
+              <h1 className="text-center mb-4">ミーティングスケジューラ（仮）</h1>
+              <Form>
+                <Form.Group controlId="groupName">
+                  <Form.Label>グループ名</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="グループ名を入力してください"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                  />
+                </Form.Group>
+                <Button
+                  variant="primary"
+                  className="mt-3 w-100"
+                  onClick={handleCreateGroup}
+                >
+                  グループ作成
+                </Button>
+              </Form>
+            </Card.Body>
+          </Card>
+          <div style={{ textAlign: 'right', color: 'gray', fontSize: 'small' }}>
+            ver. {version}
+          </div>
+        </Col>
+      </Row>
     </Container>
   );
 }
