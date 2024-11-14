@@ -8,6 +8,15 @@ import { Container, Row, Col, Button, Alert, Card, Form, Badge } from 'react-boo
 import { getApiUrl } from '../../utils/api';
 import fs from 'fs';
 import path from 'path';
+import GroupHeader from '../../components/GroupHeader';
+import CalendarComponent from '../../components/CalendarComponent';
+import CommentSection from '../../components/CommentSection';
+import Sidebar from '../../components/Sidebar';
+import {
+  getColorByUserName,
+  formatDateWithWeekday,
+  formatTime,
+} from '../../utils/utils';
 
 export async function getServerSideProps(context) {
   const { id } = context.params;
@@ -49,45 +58,6 @@ export default function GroupPage({ version }) {
   
   // APIエンドポイントのベースパスを設定
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-  
-  // ユーザー名に基づいて背景色を生成
-  const getColorByUserName = (name) => {
-    const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
-      '#D4A5A5', '#9B59B6', '#3498DB', '#1ABC9C', '#F1C40F',
-      '#E74C3C', '#2ECC71', '#E67E22', '#7F8C8D', '#C0392B',
-      '#8E44AD', '#F39C12', '#16A085', '#D35400', '#27AE60',
-      '#2980B9', '#E84393', '#6C5CE7', '#00B894', '#00CEC9',
-      '#FD79A8', '#6C5CE7', '#FDA7DF', '#A8E6CF', '#DCEDC1',
-      '#FFD3B6', '#FF8B94', '#B83B5E', '#6A2C70', '#08D9D6'
-    ];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-  
-  // 日付フォーマット用ヘルパー関数
-  const formatDateWithWeekday = (dateString) => {
-    const options = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    };
-    return new Date(dateString).toLocaleString('ja-JP', options);
-  };
-  
-  const formatTime = (dateString) => {
-    const options = {
-      hour: '2-digit',
-      minute: '2-digit'
-    };
-    return new Date(dateString).toLocaleTimeString('ja-JP', options);
-  };
   
   // グループ名を取得（修正）
   useEffect(() => {
@@ -296,7 +266,7 @@ export default function GroupPage({ version }) {
         }
       }
     } else {
-      // イベントを追加する
+      // イベント���追加する
       try {
         const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
           method: 'POST',
@@ -470,7 +440,7 @@ export default function GroupPage({ version }) {
       return;
     }
     if (!newComment.trim()) {
-      alert('コメントを入力してください');
+      alert('コメントを入力してく��さい');
       return;
     }
     
@@ -571,263 +541,57 @@ export default function GroupPage({ version }) {
   return (
     <Container className="mt-5">
       {/* グループ名とURL */}
-      <Row className="mb-4">
-        <Col>
-          <h1 className="text-center mb-3">{groupName || 'グループ名が設定されていません'}</h1>
-          <div className="text-center">
-            {pageUrl && (
-              <Button 
-                variant="outline-primary" 
-                onClick={handleCopyUrl}
-              >
-                グループURLの取得
-              </Button>
-            )}
-            {isCopied && <Alert variant="success" className="mt-2">URLをコピーしました！</Alert>}
-          </div>
+      <GroupHeader
+        groupName={groupName}
+        pageUrl={pageUrl}
+        handleCopyUrl={handleCopyUrl}
+        isCopied={isCopied}
+      />
+
+      {/* カレンダーとサイドバー */}
+      <Row>
+        {/* カレンダー */}
+        <Col md={8} className="mb-4 px-2">
+          <CalendarComponent
+            events={events}
+            handleDateClick={handleDateClick}
+            handleEventClick={handleEventClick}
+            renderEventContent={renderEventContent}
+            selectAllow={selectAllow}
+            users={users}
+            version={version}
+            setName={setName} // 追加
+          />
+
+          <CommentSection
+            comments={comments}
+            handleAddComment={handleAddComment}
+            newComment={newComment}
+            setNewComment={setNewComment}
+            name={name}
+            getColorByUserName={getColorByUserName}
+            formatDateWithWeekday={formatDateWithWeekday}
+          />
+        </Col>
+
+        {/* サイドバー */}
+        <Col md={4}>
+          <Sidebar
+            name={name}
+            setName={setName}
+            isGroupMode={isGroupMode}
+            setIsGroupMode={setIsGroupMode}
+            results={results}
+            users={users}
+            maxCount={maxCount}
+            handleDownload={handleDownload}
+            getUsersForTimeSlot={getUsersForTimeSlot}
+            formatDateWithWeekday={formatDateWithWeekday}
+            formatTime={formatTime}
+            getColorByUserName={getColorByUserName}
+          />
         </Col>
       </Row>
-    
-    {/* カレンダーとサイドバー */}
-    <Row>
-    {/* カレンダー */}
-    <Col md={8} className="mb-4 px-2">
-    <Card>
-    <Card.Body style={{ padding: '0.5rem' }}>
-    <FullCalendar
-    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-    slotMinWidth={30} // スロットの最小幅を設定
-    slotMaxWidth={60} // スロットの最大幅を設定
-    eventOverlap={true} // イベントの重なりを許可
-    initialView="todayWeek"
-    headerToolbar={{
-      left: 'prev,next today',
-      center: 'title',
-      right: '' // 「今週」ボタンを削除
-    }}
-    views={{
-      todayWeek: {
-        type: 'timeGrid',
-        duration: { days: 7 },
-        buttonText: '今日から1週間',
-        visibleRange: function (currentDate) {
-          const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-          const end = new Date(start);
-          end.setDate(end.getDate() + 7);
-          return { start, end };
-        }
-      }
-    }}
-    selectable={true}
-    selectAllow={selectAllow} // 選択許可関数を追加
-    dateClick={handleDateClick} // 修正済みのハンドラを使用
-    events={events}
-    eventClick={handleEventClick} // 修正済みのハンドラを使用
-    displayEventTime={false} // 時間表示を無効化
-    height="auto" // 高さを自動調整
-    aspectRatio={1.5} // 幅と高さの比率を調整
-    contentHeight="auto" // コンテンツに合わせて高さを調整
-    locale="ja"
-    allDaySlot={false}
-    slotDuration="01:00:00" // 1時間単位
-    snapDuration="01:00:00"  // スナップを1時間単位に
-    selectMinDuration="01:00:00" // 選択の最小時間を1時間に
-    selectMaxDuration="01:00:00" // 選択の最大時間を1時間に
-    eventContent={renderEventContent} // カスタムイベントレンダリング
-    eventClassNames={(arg) => {
-      if (arg.event.title === 'GROUP') {
-        return 'group-event'; // カスタムクラスを追加
-      } else {
-        return 'custom-event';
-      }
-    }}
-    />
-    {/* ユーザー一覧を表示 */}
-    <div className="mt-4">
-    <div className="d-flex flex-wrap">
-    {users.map(([userName, color], index) => (
-      <div
-      key={index}
-      className="mb-2 me-2 px-3 py-1 rounded"
-      style={{ backgroundColor: color, cursor: 'pointer' }}
-      onClick={() => setName(userName)}
-      >
-      <span>{userName}</span>
-      </div>
-    ))}
-    </div>
-    </div>
-    </Card.Body>
-    </Card>
-    <div className="text-end mt-2" style={{ fontSize: '0.8rem', color: '#6c757d' }}>
-    ver. {version}
-    </div>
-    <Card className="mt-4">
-    <Card.Body>
-    <div className="d-flex justify-content-between align-items-center mb-2">
-    <h5 className="mb-0">コメント</h5>
-    <Button
-    type="submit"
-    variant="primary"
-    disabled={!newComment.trim()}
-    onMouseOver={() => {
-      if (!name.trim()) {
-        alert('ユーザー名の入力が必要');
-      }
-    }}
-    form="commentForm" // フォームのIDを指定
-    >
-    Submit
-    </Button>
-    </div>
-    
-    {/* コメント入力フォーム */}
-    <Form id="commentForm" onSubmit={handleAddComment} className="mb-3">
-    <Form.Group>
-    <Form.Control
-    as="textarea"
-    rows={1} // 行数を減らしてコンパクトに
-    placeholder="コメントを入力"
-    value={newComment}
-    onChange={(e) => setNewComment(e.target.value)}
-    className="comment-textarea" // クラス名を追加
-    />
-    </Form.Group>
-    </Form>
-    
-    {/* コメントリスト */}
-    <div>
-    {comments.map((comment) => (
-      <div key={comment.id} className="mb-2 border-bottom pb-1">
-      <div className="d-flex justify-content-between align-items-center mb-1">
-      <div className="d-flex align-items-center">
-      <div
-      className="rounded-circle me-2 comment-icon"
-      style={{
-        backgroundColor: getColorByUserName(comment.name),
-      }}
-      >
-      {comment.name.charAt(0).toUpperCase()}
-      </div>
-      <strong className="comment-name">{comment.name}</strong>
-      </div>
-      <small className="text-muted comment-date">
-      {formatDateWithWeekday(comment.createdAt)}
-      </small>
-      </div>
-      <p className="mb-0 comment-text">{comment.text}</p>
-      </div>
-    ))}
-    </div>
-    </Card.Body>
-    </Card>
-    </Col>
-        {/* サイドバー */}
-    <Col md={4}>
-    {/* ユーザー名入力とグループ候補設定 */}
-    <Card className="mb-4">
-    <Card.Body>
-    <h5 className="mb-3">ユーザ名を入力してください</h5>
-    {!isGroupMode && (
-      <Form>
-      <Form.Group controlId="userName">
-      <Form.Control
-      type="text"
-      placeholder="名前を入力"
-      value={name}
-      onChange={(e) => setName(e.target.value)}
-      />
-      </Form.Group>
-      </Form>
-    )}
-    <Form.Check
-    type="switch"
-    id="group-mode-switch"
-    label="グループ指定：入力可能日時が制限されます"
-    checked={isGroupMode}
-    onChange={(e) => {
-      setIsGroupMode(e.target.checked);
-      if (e.target.checked) {
-        setName('GROUP');
-      } else {
-        setName('');
-      }
-    }}
-    className="mt-3"
-    />
-    </Card.Body>
-    </Card>
-    
-    {/* 最終候補日 */}
-    <Card>
-    <Card.Body>
-    <div className="d-flex justify-content-between align-items-center mb-3">
-    <h5 className="mb-0">最終候補日</h5>
-    <Button
-    variant="primary"
-    size="sm"
-    onClick={handleDownload}
-    >
-    ICS Download
-    </Button>
-    </div>
-    <ul className="list-unstyled">
-    {results.map((result, index) => {
-      const users = getUsersForTimeSlot(result.startDateTime);
-      const userCount = users.length;
-      const isMax = userCount === maxCount;
-      const uniqueId = result.id ? result.id : `${result.startDateTime}-${result.endDateTime}`;
-      
-      // デバッグログを追加
-      console.log('Result:', {
-        id: result.id,
-        startDateTime: result.startDateTime,
-        endDateTime: result.endDateTime,
-        uniqueId: uniqueId,
-        index: index
-      });
-      
-      return (
-        <React.Fragment key={`result-fragment-${uniqueId}`}>
-        <li
-        key={`result-li-${uniqueId}`} // 修正: uniqueId を使用
-        className={`mb-2 d-flex justify-content-between align-items-center p-2 rounded ${
-          isMax ? 'bg-warning text-dark' : ''
-        }`}
-        >
-        <span className="final-date-time">
-        {formatDateWithWeekday(result.startDateTime)} - {formatTime(result.endDateTime)}
-        </span>
-        <span className="user-count">{userCount}人</span>
-        </li>
-        {isMax && users.length > 0 && (
-          <li key={`users-li-${uniqueId}`} className="ms-3 mb-3 d-flex justify-content-between align-items-center">
-          <div className="d-flex flex-wrap gap-2 mt-2">
-          {users.map((user, userIndex) => (
-            <span
-            key={`user-${uniqueId}-${userIndex}`}
-            className="px-2 py-1 rounded"
-            style={{
-              backgroundColor: user.color,
-              color: '#fff',
-              fontSize: '0.9rem',
-            }}
-            >
-            {user.name}
-            </span>
-          ))}
-          </div>
-          <Badge bg="secondary">最も多い</Badge>
-          </li>
-        )}
-        </React.Fragment>
-      );
-    })}
-    </ul>
-    </Card.Body>
-    </Card>
-    </Col>
-    </Row>
-      </Container>
-);
+    </Container>
+  );
 }
