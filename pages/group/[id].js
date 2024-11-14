@@ -24,9 +24,10 @@ export async function getServerSideProps(context) {
   // プロトコルとホスト名を取得してベース URL を構築
   const protocol = context.req.headers['x-forwarded-proto'] || 'http';
   const host = context.req.headers['host'];
-  const baseUrl = `${protocol}://${host}`;
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''; // 追加
+  const baseUrl = `${protocol}://${host}${basePath}`; // 変更
   
-  const res = await fetch(`${baseUrl}/api/group/${id}`);
+  const res = await fetch(`${baseUrl}/api/group/${id}`); // 変更箇所
   const data = await res.json();
 
   if (res.status !== 200 || !data.name) {
