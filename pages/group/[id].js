@@ -47,7 +47,7 @@ export default function GroupPage({ version }) {
     }
   }, [router.asPath]);
   
-  // APIエンドポイントのベースパ���を設定
+  // APIエンドポイントのベースパスを設定
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   
   // ユーザー名に基づいて背景色を生成
@@ -266,7 +266,7 @@ export default function GroupPage({ version }) {
       return;
     }
     
-    // 同じユーザーが同じ時間帯に既にイベントを持っているか確��
+    // 同じユーザーが同じ時間帯に既にイベントを持っているか確認
     const existingEvent = events.find(e =>
       e.title === currentName &&
       new Date(e.start).getTime() === start.getTime() &&
@@ -570,20 +570,23 @@ export default function GroupPage({ version }) {
   
   return (
     <Container className="mt-5">
-    {/* グループ名とURL */}
-    <Row className="mb-4">
-    <Col>
-    <h1 className="text-center mb-3">{groupName || 'グループ名が設定されていません'}</h1>
-    <div className="text-center">
-    {pageUrl && (
-      <Button variant="link" onClick={handleCopyUrl} style={{ textDecoration: 'underline' }}>
-      {pageUrl}
-      </Button>
-    )}
-    {isCopied && <Alert variant="success" className="mt-2">URLをコピーしました！</Alert>}
-    </div>
-    </Col>
-    </Row>
+      {/* グループ名とURL */}
+      <Row className="mb-4">
+        <Col>
+          <h1 className="text-center mb-3">{groupName || 'グループ名が設定されていません'}</h1>
+          <div className="text-center">
+            {pageUrl && (
+              <Button 
+                variant="outline-primary" 
+                onClick={handleCopyUrl}
+              >
+                グループURLの取得
+              </Button>
+            )}
+            {isCopied && <Alert variant="success" className="mt-2">URLをコピーしました！</Alert>}
+          </div>
+        </Col>
+      </Row>
     
     {/* カレンダーとサイドバー */}
     <Row>
@@ -630,7 +633,7 @@ export default function GroupPage({ version }) {
     snapDuration="01:00:00"  // スナップを1時間単位に
     selectMinDuration="01:00:00" // 選択の最小時間を1時間に
     selectMaxDuration="01:00:00" // 選択の最大時間を1時間に
-    eventContent={renderEventContent} // カ��タムイベントレンダリング
+    eventContent={renderEventContent} // カスタムイベントレンダリング
     eventClassNames={(arg) => {
       if (arg.event.title === 'GROUP') {
         return 'group-event'; // カスタムクラスを追加
