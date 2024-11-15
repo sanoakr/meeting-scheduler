@@ -282,34 +282,31 @@ export default function GroupPage({ version }) {
       return;
     }
     
-    // 同じユーザーが同じ時間帯に既にイベントを持っているか確認
+    // 同じユーザーが同じ時間帯に既にイベントを持っているか確認を強化
     const existingEvent = events.find(e =>
       e.title === currentName &&
-      new Date(e.start).getTime() === start.getTime() &&
-      new Date(e.end).getTime() === end.getTime()
+      new Date(e.start).getTime() === start.getTime()
     );
     
     if (existingEvent) {
       // イベントを削除する
-      if (confirm('この時間帯の自分のイベントを削除しますか？')) {
+      try {
         const eventId = parseInt(existingEvent.id);
-        try {
-          const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ eventId }),
-          });
-          
-          if (res.ok) {
-            setEvents(events.filter(e => e.id !== existingEvent.id));
-          } else {
-            const errorData = await res.json();
-            alert(`エラー: ${errorData.error}`);
-          }
-        } catch (err) {
-          alert('イベントの削除中にエラーが発生しました');
-          console.error('Error deleting event:', err);
+        const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId }),
+        });
+        
+        if (res.ok) {
+          setEvents(events.filter(e => e.id !== existingEvent.id));
+        } else {
+          const errorData = await res.json();
+          alert(`エラー: ${errorData.error}`);
         }
+      } catch (err) {
+        alert('イベントの削除中にエラーが発生しました');
+        console.error('Error deleting event:', err);
       }
     } else {
       try {
@@ -320,8 +317,10 @@ export default function GroupPage({ version }) {
         });
         
         if (res.ok) {
-          // クライアントサイドでの即時の状態更新を削除
-          // サーバーからのSocket通知で処理される
+          const data = await res.json();
+          // 即時に表示を更新
+          const newEvent = applyEventStyle(data);
+          setEvents(prevEvents => [...prevEvents, newEvent]);
         } else {
           const errorData = await res.json();
           alert(`エラー: ${errorData.error}`);
@@ -366,31 +365,29 @@ export default function GroupPage({ version }) {
     
     if (existingEvent) {
       // 自分のイベントがある場合、削除する
-      if (confirm('この時間帯の自分のイベントを削除しますか？')) {
+      try {
         const eventId = parseInt(existingEvent.id);
-        try {
-          const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ eventId }),
-          });
-          
-          if (res.ok) {
-            // カレンダーからイベントを削除
-            const calendarApi = clickInfo.view.calendar;
-            const eventToRemove = calendarApi.getEventById(existingEvent.id);
-            if (eventToRemove) {
-              eventToRemove.remove();
-            }
-            setEvents(events.filter(e => e.id !== existingEvent.id));
-          } else {
-            const errorData = await res.json();
-            alert(`エラー: ${errorData.error}`);
+        const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId }),
+        });
+        
+        if (res.ok) {
+          // カレンダーからイベントを削除
+          const calendarApi = clickInfo.view.calendar;
+          const eventToRemove = calendarApi.getEventById(existingEvent.id);
+          if (eventToRemove) {
+            eventToRemove.remove();
           }
-        } catch (err) {
-          alert('イベントの削除中にエラーが発生しました');
-          console.error('Error deleting event:', err);
+          setEvents(events.filter(e => e.id !== existingEvent.id));
+        } else {
+          const errorData = await res.json();
+          alert(`エラー: ${errorData.error}`);
         }
+      } catch (err) {
+        alert('イベントの削除中にエラーが発生しました');
+        console.error('Error deleting event:', err);
       }
     } else {
       // 自分のイベントがない場合、追加する
@@ -751,6 +748,8 @@ export default function GroupPage({ version }) {
 
   // イベントにスタイルを適用する関数を修正
   const applyEventStyle = (event) => {
+    if (!event) return null;
+
     let eventStyle = {
       ...event,
       backgroundColor: getConsistentColorForUser(event.title),

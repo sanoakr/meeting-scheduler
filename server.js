@@ -44,6 +44,19 @@ app.prepare().then(() => {
     const { id } = req.params;
     const { name, start, end } = req.body;
     try {
+      // 重複チェック
+      const existingCandidate = await prisma.candidate.findFirst({
+        where: {
+          groupId: id,
+          name: name,
+          startDateTime: new Date(start),
+        },
+      });
+
+      if (existingCandidate) {
+        return res.status(400).json({ error: '同じ時間帯に既にイベントが登録されています。' });
+      }
+
       const candidate = await prisma.candidate.create({
         data: {
           name,
