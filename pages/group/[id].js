@@ -1,5 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { format, utcToZonedTime } from 'date-fns-tz';
+
+// ICSファイル生成用のヘルパー関数を追加
+const generateICSContent = (results, groupName) => {
+  const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const timeZone = 'Asia/Tokyo';
+
+  // ICSファイルのヘッダー
+  const icsHeader = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Meeting Scheduler//NONSGML v1.0//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH'
+  ].join('\r\n');
+
+  // ICSファイルのフッター
+  const icsFooter = 'END:VCALENDAR';
+
+  // 各候補日のVEVENTを生成
+  const events = results.map(result => {
+    const users = getUsersForTimeSlot(result.startDateTime);
+    const userNames = users.map(user => user.name).join(',');
+    const startDate = utcToZonedTime(new Date(result.startDateTime), timeZone);
+    const endDate = utcToZonedTime(new Date(result.endDateTime), timeZone);
+
+    // 日付をICSフォーマットに変換
+    const start = format(startDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
+    const end = format(endDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
+
+    return [
+      'BEGIN:VEVENT',
+      `DTSTART;TZID=${timeZone}:${start}`,
+      `DTEND;TZID=${timeZone}:${end}`,
+      `DTSTAMP:${now}`,
+      `UID:${result.id}@meetingscheduler`,
+      `SUMMARY:${groupName} (${userNames})`,
+      'END:VEVENT'
+    ].join('\r\n');
+  });
+
+  // 完全なICSファイルの内容を生成
+  return `${icsHeader}\r\n${events.join('\r\n')}\r\n${icsFooter}`;
+};
 import FullCalendar from '@fullcalendar/react';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -195,7 +239,7 @@ export default function GroupPage({ version }) {
     return events
     .filter(event => 
       new Date(event.start).getTime() === new Date(startTime).getTime() &&
-      event.title !== 'GROUP'  // GROUP を除外
+      event.title !== 'GROUP'  // GROUP を除��
     )
     .map(event => ({
       name: event.title,
@@ -501,6 +545,7 @@ export default function GroupPage({ version }) {
   // ICSファイル生成用のヘルパー関数を追加
   const generateICSContent = (results, groupName) => {
     const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const timeZone = 'Asia/Tokyo';
     
     // ICSファイルのヘッダー
     const icsHeader = [
@@ -518,17 +563,17 @@ export default function GroupPage({ version }) {
     const events = results.map(result => {
       const users = getUsersForTimeSlot(result.startDateTime);
       const userNames = users.map(user => user.name).join(',');
-      const startDate = new Date(result.startDateTime);
-      const endDate = new Date(result.endDateTime);
+      const startDate = utcToZonedTime(new Date(result.startDateTime), timeZone);
+      const endDate = utcToZonedTime(new Date(result.endDateTime), timeZone);
       
       // 日付をICSフォーマットに変換
-      const start = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      const end = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      const start = format(startDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
+      const end = format(endDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
       
       return [
         'BEGIN:VEVENT',
-        `DTSTART:${start}`,
-        `DTEND:${end}`,
+        `DTSTART;TZID=${timeZone}:${start}`,
+        `DTEND;TZID=${timeZone}:${end}`,
         `DTSTAMP:${now}`,
         `UID:${result.id}@meetingscheduler`,
         `SUMMARY:${groupName} (${userNames})`,
