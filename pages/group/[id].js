@@ -318,9 +318,6 @@ export default function GroupPage({ version }) {
         
         if (res.ok) {
           const data = await res.json();
-          // 即時に表示を更新
-          const newEvent = applyEventStyle(data);
-          setEvents(prevEvents => [...prevEvents, newEvent]);
         } else {
           const errorData = await res.json();
           alert(`エラー: ${errorData.error}`);
@@ -404,26 +401,6 @@ export default function GroupPage({ version }) {
         
         if (res.ok) {
           const data = await res.json();
-          // ユーザーごとの色を設定
-          let newEventStyle = {
-            backgroundColor: getColorByUserName(currentName),
-            textColor: '#fff',
-          };
-          
-          if (currentName === 'GROUP') {
-            newEventStyle = {
-              backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
-              borderColor: 'orange',
-              textColor: '',
-              display: 'background',
-            };
-          }
-          
-          const newEvent = {
-            ...data,
-            ...newEventStyle,
-          };
-          setEvents([...events, newEvent]);
         } else {
           const errorData = await res.json();
           alert(`エラー: ${errorData.error}`);
@@ -604,10 +581,10 @@ export default function GroupPage({ version }) {
       socket.on('eventAdded', ({ event, senderId, isServerEvent }) => {
         console.log('Received eventAdded:', { event, senderId, isServerEvent });
         setEvents(prevEvents => {
-          // 既存のイベントとの重複チェック
+          // 既存のイベントとの重複チェックを修正
           const eventExists = prevEvents.some(e => 
             e.id === event.id || 
-            (e.title === e.title && 
+            (e.title === event.title && 
              new Date(e.start).getTime() === new Date(event.start).getTime())
           );
           
