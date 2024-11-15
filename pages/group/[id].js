@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { format } from 'date-fns-tz'; // utcToZonedTime を削除
 import { v4 as uuidv4 } from 'uuid';
+import io from 'socket.io-client'; // 追加
 
 // ICSファイル生成用のヘルパー関数を修正
 const generateICSContent = (results, groupName) => {
@@ -92,6 +93,8 @@ export async function getServerSideProps(context) {
   };
 }
 
+let socket; // 追加
+
 export default function GroupPage({ version }) {
   const router = useRouter();
   const { id } = router.query;
@@ -104,6 +107,7 @@ export default function GroupPage({ version }) {
   const [isGroupMode, setIsGroupMode] = useState(false); // 追加
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+  const socketRef = useRef(null);  // socket インスタンスを保持するref
   // const [isIcsMode, setIsIcsMode] = useState(false); // ics トグルスイッチの状態
   // const [selectedResults, setSelectedResults] = useState([]); // チェックされた日時項目のIDを管理
   
@@ -365,7 +369,7 @@ export default function GroupPage({ version }) {
       }
     }
   };
-  
+
   // イベントクリック時の処理（修正済み）
   const handleEventClick = async (clickInfo) => {
     if (!name.trim() && !isGroupMode) {
@@ -605,7 +609,181 @@ export default function GroupPage({ version }) {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   };
-  
+
+  const fetchEvents = async () => {
+    const res = await fetch(`/api/group/${id}/candidates`);
+    // ...existing code...
+  };
+
+  const handleAddEvent = async (eventData) => {
+    const res = await fetch(`/api/group/${id}/candidates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(eventData),
+    });
+    // ...existing code...
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    const res = await fetch(`/api/group/${id}/candidates`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId }),
+    });
+    // ...existing code...
+  };
+
+  useEffect(() => {
+    socketRef.current = io();
+    const socket = socketRef.current;
+
+    socket.emit('joinGroup', { groupId: id });
+
+    socket.on('eventDeleted', ({ eventId, senderId }) => {
+      console.log('Received delete event:', eventId, 'from:', senderId);
+      // 自分が送信したイベントは無視（すでにローカルで削除済み）
+      if (senderId !== socket.id) {
+        setEvents(prev => {
+          console.log('Filtering events:', prev);
+          return prev.filter(event => event.id !== eventId.toString());
+        });
+      }
+    });
+
+    socket.on('eventAdded', ({ event, senderId }) => {
+      // 自分が送信したイベントは無視（すでにローカルで追加済み）
+      if (senderId !== socket.id) {
+        setEvents(prev => [...prev, event]);
+      }
+    });
+
+    // コンポーネントのアンマウント時にソケットを切断
+    return () => {
+      socket.disconnect();
+    };
+  }, [id]);
+
+  const handleEventAdd = async (info) => {
+    const { start, end } = info.dateStr ? 
+      { start: new Date(info.dateStr), end: new Date(info.dateStr) } : 
+      { start: info.start, end: info.end };
+
+    try {
+      const res = await fetch(`/api/group/${id}/candidates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: userName,
+          start,
+          end
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error('イベントの追加に失敗しました');
+      }
+
+      const newEvent = await res.json();
+      setEvents(prev => [...prev, newEvent]);
+
+      // 他のクライアン��に通知
+      socketRef.current.emit('addEvent', {
+        groupId: id,
+        event: newEvent
+      });
+
+      return true; // 成功を返す
+    } catch (error) {
+      console.error('Error adding event:', error);
+      return false; // 失敗を返す
+    }
+  };
+
+  const handleEventDelete = async (eventId) => {
+    try {
+      const res = await fetch(`/api/group/${id}/candidates`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: eventId.toString() })
+      });
+
+      if (!res.ok) {
+        throw new Error('イベントの削除に失敗しました');
+      }
+
+      // ローカルでイベントを削除
+      setEvents(prev => prev.filter(event => event.id !== eventId.toString()));
+
+      // 他のクライアントに通知
+      socketRef.current.emit('deleteEvent', {
+        groupId: id,
+        eventId: eventId.toString()
+      });
+
+      return true; // 成功を返す
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      return false; // 失敗を返す
+    }
+  };
+
+  const handleDateSelect = async (selectInfo) => {
+    const title = userName || '名前未設定';
+    const calendarApi = selectInfo.view.calendar;
+
+    try {
+      const res = await fetch(`/api/group/${id}/candidates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: title,
+          start: selectInfo.start,
+          end: selectInfo.end,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('イベントの追加に失敗しました');
+      }
+
+      const newEvent = await res.json();
+      
+      // ローカルでのイベント追加���サーバーからの通知で行うため、ここでは行わない
+      socketRef.current.emit('addEvent', {
+        groupId: id,
+        event: newEvent
+      });
+
+      calendarApi.unselect();
+    } catch (error) {
+      console.error('Error adding event:', error);
+      calendarApi.unselect();
+    }
+  };
+
+  useEffect(() => {
+    socketRef.current = io();
+    const socket = socketRef.current;
+
+    socket.emit('joinGroup', { groupId: id });
+
+    socket.on('eventAdded', ({ event, senderId }) => {
+      console.log('Received eventAdded:', { event, senderId });
+      // 送信者に関係なく、全てのイベントを追加
+      setEvents(prev => [...prev, event]);
+    });
+
+    socket.on('eventDeleted', ({ eventId, senderId }) => {
+      console.log('Received eventDeleted:', { eventId, senderId });
+      // 送信者に関係なく、該当するイベントを削除
+      setEvents(prev => prev.filter(event => event.id !== eventId));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [id]);
+
   return (
     <Container className="mt-5">
       {/* グループ名とURL */}
