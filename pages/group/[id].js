@@ -459,7 +459,7 @@ export default function GroupPage({ version }) {
     return duration === 1;
   };
   
-  // コメント追加ハンドラー��修正
+  // コメント追加ハンドラーを修正
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -482,9 +482,9 @@ export default function GroupPage({ version }) {
       });
 
       if (res.ok) {
-        const comment = await res.json();
-        setComments(prevComments => [comment, ...prevComments]);
-        setNewComment('');
+        // サーバーからのWebSocket通知で処理されるため、
+        // ここでのsetCommentsは不要
+        setNewComment(''); // 入力フィールドをクリア
       } else {
         console.error('コメント投稿エラー:', await res.text());
         alert('コメントの投稿に失敗しました');
@@ -610,7 +610,7 @@ export default function GroupPage({ version }) {
           // 既存のイベントとの重複チェック
           const eventExists = prevEvents.some(e => 
             e.id === event.id || 
-            (e.title === event.title && 
+            (e.title === e.title && 
              new Date(e.start).getTime() === new Date(event.start).getTime())
           );
           
@@ -631,10 +631,17 @@ export default function GroupPage({ version }) {
         setResults(newResults);
       });
 
+      // コメント追加のリスナーを追加
+      socket.on('commentAdded', (newComment) => {
+        console.log('Received commentAdded:', newComment);
+        setComments(prevComments => [newComment, ...prevComments]);
+      });
+
       return () => {
         socket.off('eventAdded');
         socket.off('eventDeleted');
         socket.off('resultsUpdated');
+        socket.off('commentAdded'); // コメントリスナーの解除を追加
         socket.disconnect();
         socketRef.current = null;
       };
@@ -742,7 +749,7 @@ export default function GroupPage({ version }) {
     return newColor;
   };
 
-  // イベントにスタイルを適用する関数���修正
+  // イベントにスタイルを適用する関数を修正
   const applyEventStyle = (event) => {
     let eventStyle = {
       ...event,
