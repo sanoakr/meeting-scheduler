@@ -174,7 +174,7 @@ export default function GroupPage({ version }) {
       })
       .catch((error) => console.error('Error fetching results:', error));
     }
-  }, [id, events, basePath]);
+  }, [id, basePath]);
   
   useEffect(() => {
     if (id) {
@@ -625,9 +625,16 @@ export default function GroupPage({ version }) {
         setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
       });
 
+      // 最終候補日更新のリスナーを追加
+      socket.on('resultsUpdated', (newResults) => {
+        console.log('Received resultsUpdated:', newResults);
+        setResults(newResults);
+      });
+
       return () => {
         socket.off('eventAdded');
         socket.off('eventDeleted');
+        socket.off('resultsUpdated');
         socket.disconnect();
         socketRef.current = null;
       };
