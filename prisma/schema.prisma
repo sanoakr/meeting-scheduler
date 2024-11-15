@@ -23,7 +23,7 @@ model Comment {
   text      String
   name      String
   createdAt DateTime @default(now())
-  groupId   String
+  groupId   String   // Int から String に変更されているため、String として扱う
   group     Group    @relation(fields: [groupId], references: [id])
 }
 

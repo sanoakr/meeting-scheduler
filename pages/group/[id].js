@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { format, utcToZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns-tz'; // utcToZonedTime を削除
 
-// ICSファイル生成用のヘルパー関数を追加
+// ICSファイル生成用のヘルパー関数を修正
 const generateICSContent = (results, groupName) => {
   const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   const timeZone = 'Asia/Tokyo';
@@ -13,7 +13,10 @@ const generateICSContent = (results, groupName) => {
     'VERSION:2.0',
     'PRODID:-//Meeting Scheduler//NONSGML v1.0//EN',
     'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH'
+    'METHOD:PUBLISH',
+    'BEGIN:VTIMEZONE',
+    `TZID:${timeZone}`,
+    'END:VTIMEZONE'
   ].join('\r\n');
 
   // ICSファイルのフッター
@@ -23,12 +26,12 @@ const generateICSContent = (results, groupName) => {
   const events = results.map(result => {
     const users = getUsersForTimeSlot(result.startDateTime);
     const userNames = users.map(user => user.name).join(',');
-    const startDate = utcToZonedTime(new Date(result.startDateTime), timeZone);
-    const endDate = utcToZonedTime(new Date(result.endDateTime), timeZone);
-
+    
     // 日付をICSフォーマットに変換
-    const start = format(startDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
-    const end = format(endDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
+    const startDate = new Date(result.startDateTime);
+    const endDate = new Date(result.endDateTime);
+    const start = format(startDate, "yyyyMMdd'T'HHmmss", { timeZone });
+    const end = format(endDate, "yyyyMMdd'T'HHmmss", { timeZone });
 
     return [
       'BEGIN:VEVENT',
@@ -41,7 +44,6 @@ const generateICSContent = (results, groupName) => {
     ].join('\r\n');
   });
 
-  // 完全なICSファイルの内容を生成
   return `${icsHeader}\r\n${events.join('\r\n')}\r\n${icsFooter}`;
 };
 import FullCalendar from '@fullcalendar/react';
@@ -239,7 +241,7 @@ export default function GroupPage({ version }) {
     return events
     .filter(event => 
       new Date(event.start).getTime() === new Date(startTime).getTime() &&
-      event.title !== 'GROUP'  // GROUP を除��
+      event.title !== 'GROUP'  // GROUP を除外
     )
     .map(event => ({
       name: event.title,
@@ -493,6 +495,7 @@ export default function GroupPage({ version }) {
     return duration === 1;
   };
   
+  // コメント追加ハンドラーを修正
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -503,19 +506,23 @@ export default function GroupPage({ version }) {
       alert('コメントを入力してください');
       return;
     }
-    
+
     try {
       const res = await fetch(getApiUrl(`/api/group/${id}/comments`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: newComment, name }),
+        body: JSON.stringify({
+          name: name,
+          text: newComment,
+        }),
       });
-      
+
       if (res.ok) {
         const comment = await res.json();
-        setComments([comment, ...comments]);
+        setComments(prevComments => [comment, ...prevComments]);
         setNewComment('');
       } else {
+        console.error('コメント投稿エラー:', await res.text());
         alert('コメントの投稿に失敗しました');
       }
     } catch (err) {
@@ -523,7 +530,7 @@ export default function GroupPage({ version }) {
       alert('コメントの投稿中にエラーが発生しました');
     }
   };
-  
+
   // 最も多いリストの項目をデフォルトで選択
   // useEffect(() => {
   //   if (isIcsMode) {
@@ -563,12 +570,12 @@ export default function GroupPage({ version }) {
     const events = results.map(result => {
       const users = getUsersForTimeSlot(result.startDateTime);
       const userNames = users.map(user => user.name).join(',');
-      const startDate = utcToZonedTime(new Date(result.startDateTime), timeZone);
-      const endDate = utcToZonedTime(new Date(result.endDateTime), timeZone);
+      const startDate = new Date(result.startDateTime);
+      const endDate = new Date(result.endDateTime);
       
       // 日付をICSフォーマットに変換
-      const start = format(startDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
-      const end = format(endDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
+      const start = format(startDate, "yyyyMMdd'T'HHmmss", { timeZone });
+      const end = format(endDate, "yyyyMMdd'T'HHmmss", { timeZone });
       
       return [
         'BEGIN:VEVENT',

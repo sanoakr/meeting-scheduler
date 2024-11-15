@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, Button, Form } from 'react-bootstrap';
 
@@ -13,25 +12,10 @@ const CommentSection = ({
 }) => (
   <Card className="mt-4">
     <Card.Body>
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <h5 className="mb-0">コメント</h5>
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={!newComment.trim()}
-          onMouseOver={() => {
-            if (!name.trim()) {
-              alert('ユーザー名の入力が必要');
-            }
-          }}
-          form="commentForm"
-        >
-          Submit
-        </Button>
-      </div>
-
+      <h5 className="mb-3">コメント</h5>
+      
       {/* コメント入力フォーム */}
-      <Form id="commentForm" onSubmit={handleAddComment} className="mb-3">
+      <Form onSubmit={handleAddComment} className="mb-3">
         <Form.Group>
           <Form.Control
             as="textarea"
@@ -42,6 +26,15 @@ const CommentSection = ({
             className="comment-textarea"
           />
         </Form.Group>
+        <div className="d-flex justify-content-end mt-2">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={!newComment.trim() || !name.trim()}
+          >
+            Submit
+          </Button>
+        </div>
       </Form>
 
       {/* コメントリスト */}
