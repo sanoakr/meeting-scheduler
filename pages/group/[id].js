@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { format } from 'date-fns-tz'; // utcToZonedTime を削除
+import { v4 as uuidv4 } from 'uuid';
 
 // ICSファイル生成用のヘルパー関数を修正
 const generateICSContent = (results, groupName) => {
@@ -46,10 +47,6 @@ const generateICSContent = (results, groupName) => {
 
   return `${icsHeader}\r\n${events.join('\r\n')}\r\n${icsFooter}`;
 };
-import FullCalendar from '@fullcalendar/react';
-import interactionPlugin from '@fullcalendar/interaction';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
 import { Container, Row, Col, Button, Alert, Card, Form, Badge } from 'react-bootstrap';
 import { getApiUrl } from '../../utils/api';
 import fs from 'fs';
@@ -576,13 +573,16 @@ export default function GroupPage({ version }) {
       // 日付をICSフォーマットに変換
       const start = format(startDate, "yyyyMMdd'T'HHmmss", { timeZone });
       const end = format(endDate, "yyyyMMdd'T'HHmmss", { timeZone });
-      
+          
+      // UIDの生成: result.id が存在する場合はそれを使用し、存在しない場合はUUIDを生成
+      const uid = result.id ? `${result.id}@meetingscheduler` : `${uuidv4()}@meetingscheduler`;
+    
       return [
         'BEGIN:VEVENT',
         `DTSTART;TZID=${timeZone}:${start}`,
         `DTEND;TZID=${timeZone}:${end}`,
         `DTSTAMP:${now}`,
-        `UID:${result.id}@meetingscheduler`,
+        `UID:${uid}@meetingscheduler`,
         `SUMMARY:${groupName} (${userNames})`,
         'END:VEVENT'
       ].join('\r\n');
