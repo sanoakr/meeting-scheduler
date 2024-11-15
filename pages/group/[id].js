@@ -111,6 +111,9 @@ export default function GroupPage({ version }) {
   // const [isIcsMode, setIsIcsMode] = useState(false); // ics トグルスイッチの状態
   // const [selectedResults, setSelectedResults] = useState([]); // チェックされた日時項目のIDを管理
   
+  // ユーザー色を管理するためのStateを追加
+  const [userColors, setUserColors] = useState(new Map());
+
   // クライアントサイドでのみ URL を設定（修正）
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -145,27 +148,7 @@ export default function GroupPage({ version }) {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          const coloredEvents = data.map(event => {
-            let eventStyle = {
-              backgroundColor: getColorByUserName(event.title || 'Unknown User'),
-              textColor: '#fff',
-            };
-            
-            // 'GROUP' ユーザーの場合のスタイルを調整
-            if (event.title === 'GROUP') {
-              eventStyle = {
-                backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
-                borderColor: 'orange',
-                textColor: '', // テキストは表示しない
-                display: 'background',
-              };
-            }
-            
-            return {
-              ...event,
-              ...eventStyle,
-            };
-          });
+          const coloredEvents = data.map(applyEventStyle);
           setEvents(coloredEvents);
         } else {
           console.warn('予期しないデータ形式:', data);
@@ -329,7 +312,6 @@ export default function GroupPage({ version }) {
         }
       }
     } else {
-      // イベントを追加する
       try {
         const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
           method: 'POST',
@@ -338,27 +320,8 @@ export default function GroupPage({ version }) {
         });
         
         if (res.ok) {
-          const data = await res.json();
-          // ユーザーごとの色を設定
-          let newEventStyle = {
-            backgroundColor: getColorByUserName(currentName),
-            textColor: '#fff',
-          };
-          
-          if (currentName === 'GROUP') {
-            newEventStyle = {
-              backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
-              borderColor: 'orange',
-              textColor: '',
-              display: 'background',
-            };
-          }
-          
-          const newEvent = {
-            ...data,
-            ...newEventStyle,
-          };
-          setEvents([...events, newEvent]);
+          // クライアントサイドでの即時の状態更新を削除
+          // サーバーからのSocket通知で処理される
         } else {
           const errorData = await res.json();
           alert(`エラー: ${errorData.error}`);
@@ -496,7 +459,7 @@ export default function GroupPage({ version }) {
     return duration === 1;
   };
   
-  // コメント追加ハンドラーを修正
+  // コメント追加ハンドラー��修正
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -633,35 +596,43 @@ export default function GroupPage({ version }) {
     // ...existing code...
   };
 
+  // 重複したuseEffectを削除し、1つのWebSocket初期化処理にまとめる
   useEffect(() => {
-    socketRef.current = io();
-    const socket = socketRef.current;
+    if (!socketRef.current) {
+      socketRef.current = io();
+      const socket = socketRef.current;
 
-    socket.emit('joinGroup', { groupId: id });
+      socket.emit('joinGroup', { groupId: id });
 
-    socket.on('eventDeleted', ({ eventId, senderId }) => {
-      console.log('Received delete event:', eventId, 'from:', senderId);
-      // 自分が送信したイベントは無視（すでにローカルで削除済み）
-      if (senderId !== socket.id) {
-        setEvents(prev => {
-          console.log('Filtering events:', prev);
-          return prev.filter(event => event.id !== eventId.toString());
+      socket.on('eventAdded', ({ event, senderId, isServerEvent }) => {
+        console.log('Received eventAdded:', { event, senderId, isServerEvent });
+        setEvents(prevEvents => {
+          // 既存のイベントとの重複チェック
+          const eventExists = prevEvents.some(e => 
+            e.id === event.id || 
+            (e.title === event.title && 
+             new Date(e.start).getTime() === new Date(event.start).getTime())
+          );
+          
+          if (!eventExists) {
+            return [...prevEvents, applyEventStyle(event)];
+          }
+          return prevEvents;
         });
-      }
-    });
+      });
 
-    socket.on('eventAdded', ({ event, senderId }) => {
-      // 自分が送信したイベントは無視（すでにローカルで追加済み）
-      if (senderId !== socket.id) {
-        setEvents(prev => [...prev, event]);
-      }
-    });
+      socket.on('eventDeleted', ({ eventId, senderId }) => {
+        setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+      });
 
-    // コンポーネントのアンマウント時にソケットを切断
-    return () => {
-      socket.disconnect();
-    };
-  }, [id]);
+      return () => {
+        socket.off('eventAdded');
+        socket.off('eventDeleted');
+        socket.disconnect();
+        socketRef.current = null;
+      };
+    }
+  }, [id]); // id のみを依存配列に含める
 
   const handleEventAdd = async (info) => {
     const { start, end } = info.dateStr ? 
@@ -686,7 +657,7 @@ export default function GroupPage({ version }) {
       const newEvent = await res.json();
       setEvents(prev => [...prev, newEvent]);
 
-      // 他のクライアン��に通知
+      // 他のクライアントに通知
       socketRef.current.emit('addEvent', {
         groupId: id,
         event: newEvent
@@ -746,14 +717,7 @@ export default function GroupPage({ version }) {
         throw new Error('イベントの追加に失敗しました');
       }
 
-      const newEvent = await res.json();
-      
-      // ローカルでのイベント追加���サーバーからの通知で行うため、ここでは行わない
-      socketRef.current.emit('addEvent', {
-        groupId: id,
-        event: newEvent
-      });
-
+      // ローカルでのイベント追加はサーバーからの通知で行うため、ここでは行わない
       calendarApi.unselect();
     } catch (error) {
       console.error('Error adding event:', error);
@@ -761,28 +725,36 @@ export default function GroupPage({ version }) {
     }
   };
 
-  useEffect(() => {
-    socketRef.current = io();
-    const socket = socketRef.current;
+  // ユーザーの色を一貫して取得・管理する関数
+  const getConsistentColorForUser = (username) => {
+    if (userColors.has(username)) {
+      return userColors.get(username);
+    }
+    const newColor = getColorByUserName(username);
+    setUserColors(prev => new Map(prev).set(username, newColor));
+    return newColor;
+  };
 
-    socket.emit('joinGroup', { groupId: id });
-
-    socket.on('eventAdded', ({ event, senderId }) => {
-      console.log('Received eventAdded:', { event, senderId });
-      // 送信者に関係なく、全てのイベントを追加
-      setEvents(prev => [...prev, event]);
-    });
-
-    socket.on('eventDeleted', ({ eventId, senderId }) => {
-      console.log('Received eventDeleted:', { eventId, senderId });
-      // 送信者に関係なく、該当するイベントを削除
-      setEvents(prev => prev.filter(event => event.id !== eventId));
-    });
-
-    return () => {
-      socket.disconnect();
+  // イベントにスタイルを適用する関数���修正
+  const applyEventStyle = (event) => {
+    let eventStyle = {
+      ...event,
+      backgroundColor: getConsistentColorForUser(event.title),
+      textColor: '#fff',
     };
-  }, [id]);
+    
+    if (event.title === 'GROUP') {
+      eventStyle = {
+        ...event,
+        backgroundColor: 'rgba(255, 165, 0, 0.5)',
+        borderColor: 'orange',
+        textColor: '',
+        display: 'background',
+      };
+    }
+    
+    return eventStyle;
+  };
 
   return (
     <Container className="mt-5">
