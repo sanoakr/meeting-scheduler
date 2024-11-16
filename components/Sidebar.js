@@ -20,7 +20,6 @@ const Sidebar = ({
     {/* ユーザー名入力とグループ候補設定 */}
     <Card className="mb-4">
       <Card.Body>
-        <h5 className="mb-3">ユーザ名を入力してください</h5>
         {!isGroupMode && (
           <Form>
             <Form.Group controlId="userName">
@@ -55,7 +54,7 @@ const Sidebar = ({
     <Card>
       <Card.Body>
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="mb-0">最終候補日</h5>
+          <h5 className="mb-0">候補日</h5>
           <Button variant="primary" size="sm" onClick={handleDownload}>
             ICS Download
           </Button>

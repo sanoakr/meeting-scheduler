@@ -63,7 +63,6 @@ export default function HomePage({ version }) { // version を props から受�
               </div>
               <Form>
                 <Form.Group controlId="groupName">
-                  <Form.Label>グループ名</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="グループ名を入力してください"

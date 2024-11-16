@@ -749,11 +749,11 @@ export default function GroupPage({ version }) {
   return (
     <Container className="mt-5">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <a href="/" target="_blank" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
           <img src="/meeting-scheduler.png" alt="Meeting Scheduler" style={{ height: '50px', marginRight: '10px' }} />
           <h1 style={{ fontSize: '1.2rem', margin: 0 }}>Meeting Scheduler</h1>
-        </div>
-        <a href="/" target="_blank" style={{ fontSize: '1.2rem', border: '2px solid #ccc', padding: '5px 10px', borderRadius: '5px', textDecoration: 'none' }}>新しいグループの作成</a>
+        </a>
+        <a href="/" target="_blank" style={{ fontSize: '1rem', border: '2px solid #ccc', padding: '5px 10px', borderRadius: '5px', textDecoration: 'none' }}>新しいグループの作成</a>
       </div>
       
       {/* グループ名とURL */}

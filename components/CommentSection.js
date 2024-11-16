@@ -10,23 +10,19 @@ const CommentSection = ({
   getColorByUserName,
   formatDateWithWeekday,
 }) => (
-  <Card className="mt-4">
+  <Card className="my-3 p-2">
     <Card.Body>
-      <h5 className="mb-3">コメント</h5>
-      
       {/* コメント入力フォーム */}
       <Form onSubmit={handleAddComment} className="mb-3">
-        <Form.Group>
+        <Form.Group className="d-flex">
           <Form.Control
             as="textarea"
             rows={1}
             placeholder="コメントを入力"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="comment-textarea"
+            className="comment-textarea me-2"
           />
-        </Form.Group>
-        <div className="d-flex justify-content-end mt-2">
           <Button
             type="submit"
             variant="primary"
@@ -34,11 +30,11 @@ const CommentSection = ({
           >
             Submit
           </Button>
-        </div>
+        </Form.Group>
       </Form>
 
       {/* コメントリスト */}
-      <div>
+      <div className="mt-2">
         {comments.map((comment) => (
           <div key={comment.id} className="mb-2 border-bottom pb-1">
             <div className="d-flex justify-content-between align-items-center mb-1">
