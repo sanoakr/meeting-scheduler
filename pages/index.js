@@ -12,7 +12,7 @@ import path from 'path';
 export async function getServerSideProps() {
   const versionFilePath = path.join(process.cwd(), 'version.txt');
   const version = fs.readFileSync(versionFilePath, 'utf8').trim();
-
+  
   return {
     props: {
       version,
@@ -29,14 +29,14 @@ export default function HomePage({ version }) { // version を props から受�
       alert('グループ名を入力してください');
       return;
     }
-
+    
     try {
       const res = await fetch(getApiUrl('/api/create-group'), { // 変更箇所
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: groupName }),
       });
-
+      
       if (res.ok) {
         const { groupId } = await res.json();
         // グループ作成後にページ遷移
@@ -57,7 +57,10 @@ export default function HomePage({ version }) { // version を props から受�
         <Col md={8} lg={6}>
           <Card>
             <Card.Body>
-              <h1 className="text-center mb-4">ミーティングスケジューラ（仮）</h1>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/meeting-scheduler.png" alt="Meeting Scheduler" style={{ height: '50px', marginRight: '10px' }} />
+                <h1 style={{ fontSize: '1.2rem', margin: 0 }}>Meeting Scheduler</h1>
+              </div>
               <Form>
                 <Form.Group controlId="groupName">
                   <Form.Label>グループ名</Form.Label>

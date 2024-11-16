@@ -412,7 +412,7 @@ export default function GroupPage({ version }) {
     }
   };
   
-  // カスタムイベントレンダリング関数
+  // カスタムイベント���ンダリング関数
   function renderEventContent(eventInfo) {
     if (eventInfo.event.title === 'GROUP') {
       // 'GROUP' イベントの場合は何も表示しない
@@ -433,7 +433,7 @@ export default function GroupPage({ version }) {
     return duration === 1;
   };
   
-  // コメント追加ハンドラーを修正
+  // コメ��ト追加ハンドラーを修正
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -723,7 +723,7 @@ export default function GroupPage({ version }) {
     return newColor;
   };
 
-  // イベントにスタイルを適用する関数を修正
+  // イベントに���タイルを適用する関数を修正
   const applyEventStyle = (event) => {
     if (!event) return null;
 
@@ -748,6 +748,14 @@ export default function GroupPage({ version }) {
 
   return (
     <Container className="mt-5">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img src="/meeting-scheduler.png" alt="Meeting Scheduler" style={{ height: '50px', marginRight: '10px' }} />
+          <h1 style={{ fontSize: '1.2rem', margin: 0 }}>Meeting Scheduler</h1>
+        </div>
+        <a href="/" target="_blank" style={{ fontSize: '1.2rem', border: '2px solid #ccc', padding: '5px 10px', borderRadius: '5px', textDecoration: 'none' }}>新しいグループの作成</a>
+      </div>
+      
       {/* グループ名とURL */}
       <GroupHeader
         groupName={groupName}

@@ -75,10 +75,10 @@ const CalendarComponent = ({
               <div
                 key={index}
                 className="mb-2 me-2 px-3 py-1 rounded"
-                style={{ backgroundColor: color, cursor: 'pointer' }}
+                style={{ backgroundColor: color, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '50%' }}
                 onClick={() => setName(userName)} // 修正：名前をセットする
               >
-                <span>{userName}</span>
+                <span>{userName.charAt(0).toUpperCase()}</span>
               </div>
             ))}
           </div>
