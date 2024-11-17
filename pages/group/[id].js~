@@ -1,25 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { format } from 'date-fns-tz'; // utcToZonedTime を削除
-import { v4 as uuidv4 } from 'uuid';
-import io from 'socket.io-client'; // 追加
-import { Container, Row, Col } from 'react-bootstrap';
-import { getApiUrl, getSocketUrl } from '../../utils/api';
-import fs from 'fs';
-import path from 'path';
-import GroupHeader from '../../components/GroupHeader';
-import CalendarComponent from '../../components/CalendarComponent';
-import CommentSection from '../../components/CommentSection';
-import Sidebar from '../../components/Sidebar';
-import {
-  getColorByUserName,
-  formatDateWithWeekday,
-  formatTime,
-} from '../../utils/utils';
+import { format, utcToZonedTime } from 'date-fns-tz';
 
-// ICSファイル生成用のヘルパー関数を修正
+// ICSファイル生成用のヘルパー関数を追加
 const generateICSContent = (results, groupName) => {
-  // This function is used in handleDownload
   const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   const timeZone = 'Asia/Tokyo';
 
@@ -29,10 +13,7 @@ const generateICSContent = (results, groupName) => {
     'VERSION:2.0',
     'PRODID:-//Meeting Scheduler//NONSGML v1.0//EN',
     'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VTIMEZONE',
-    `TZID:${timeZone}`,
-    'END:VTIMEZONE'
+    'METHOD:PUBLISH'
   ].join('\r\n');
 
   // ICSファイルのフッター
@@ -42,12 +23,12 @@ const generateICSContent = (results, groupName) => {
   const events = results.map(result => {
     const users = getUsersForTimeSlot(result.startDateTime);
     const userNames = users.map(user => user.name).join(',');
-    
+    const startDate = utcToZonedTime(new Date(result.startDateTime), timeZone);
+    const endDate = utcToZonedTime(new Date(result.endDateTime), timeZone);
+
     // 日付をICSフォーマットに変換
-    const startDate = new Date(result.startDateTime);
-    const endDate = new Date(result.endDateTime);
-    const start = format(startDate, "yyyyMMdd'T'HHmmss", { timeZone });
-    const end = format(endDate, "yyyyMMdd'T'HHmmss", { timeZone });
+    const start = format(startDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
+    const end = format(endDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
 
     return [
       'BEGIN:VEVENT',
@@ -60,8 +41,26 @@ const generateICSContent = (results, groupName) => {
     ].join('\r\n');
   });
 
+  // 完全なICSファイルの内容を生成
   return `${icsHeader}\r\n${events.join('\r\n')}\r\n${icsFooter}`;
 };
+import FullCalendar from '@fullcalendar/react';
+import interactionPlugin from '@fullcalendar/interaction';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import { Container, Row, Col, Button, Alert, Card, Form, Badge } from 'react-bootstrap';
+import { getApiUrl } from '../../utils/api';
+import fs from 'fs';
+import path from 'path';
+import GroupHeader from '../../components/GroupHeader';
+import CalendarComponent from '../../components/CalendarComponent';
+import CommentSection from '../../components/CommentSection';
+import Sidebar from '../../components/Sidebar';
+import {
+  getColorByUserName,
+  formatDateWithWeekday,
+  formatTime,
+} from '../../utils/utils';
 
 export async function getServerSideProps(context) {
   const { id } = context.params;
@@ -70,40 +69,31 @@ export async function getServerSideProps(context) {
   const protocol = context.req.headers['x-forwarded-proto'] || 'http';
   const host = context.req.headers['host'];
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''; // 追加
-  const baseUrl = `${protocol}://${host}${basePath}`; // basePath を追加
+  const baseUrl = `${protocol}://${host}${basePath}`; // 変更
   
-  try {
-    const res = await fetch(`${baseUrl}/api/group/${id}`); // 修正
-    const data = await res.json();
+  const res = await fetch(`${baseUrl}/api/group/${id}`); // 変更箇所
+  const data = await res.json();
 
-    if (!res.ok || !data.name) {
-      // グループが存在しない場合、404エラーページを表示
-      return {
-        notFound: true,
-      };
-    }
-
-    const versionFilePath = path.join(process.cwd(), 'version.txt');
-    const version = fs.readFileSync(versionFilePath, 'utf8').trim();
-    
-    return {
-      props: {
-        version,
-        groupName: data.name,
-        // ...existing props...
-      },
-    };
-  } catch (error) {
-    console.error('Error fetching group:', error);
+  if (res.status !== 200 || !data.name) {
+    // グループが存在しない場合、404エラーページを表示
     return {
       notFound: true,
     };
   }
+
+  const versionFilePath = path.join(process.cwd(), 'version.txt');
+  const version = fs.readFileSync(versionFilePath, 'utf8').trim();
+  
+  return {
+    props: {
+      version,
+      groupName: data.name,
+      // ...existing props...
+    },
+  };
 }
 
-// Removed unused variable 'socket'
-
-export default function GroupPage({ version, groupName: initialGroupName }) {
+export default function GroupPage({ version }) {
   const router = useRouter();
   const { id } = router.query;
   const [groupName, setGroupName] = useState('');
@@ -115,22 +105,24 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
   const [isGroupMode, setIsGroupMode] = useState(false); // 追加
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
-  const socketRef = useRef(null);  // socket インスタンスを保持するref
+  // const [isIcsMode, setIsIcsMode] = useState(false); // ics トグルスイッチの状態
+  // const [selectedResults, setSelectedResults] = useState([]); // チェックされた日時項目のIDを管理
   
-  // ユーザー色を管理するためのStateを追加
-  const [userColors, setUserColors] = useState(new Map());
-
   // クライアントサイドでのみ URL を設定（修正）
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setPageUrl(`${window.location.origin}${router.asPath}`);
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+      setPageUrl(`${window.location.origin}${basePath}${router.asPath}`);
     }
   }, [router.asPath]);
+  
+  // APIエンドポイントのベースパスを設定
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   
   // グループ名を取得（修正）
   useEffect(() => {
     if (id) {
-      fetch(getApiUrl(`/api/group/${id}`)) // basePath を含まない
+      fetch(getApiUrl(`/api/group/${id}`))
       .then((res) => res.json())
       .then((data) => {
         if (data.name) {
@@ -141,16 +133,36 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
       })
       .catch((error) => console.error('Error fetching group name:', error));
     }
-  }, [id]);
+  }, [id, basePath]);
   
   // 候補日データを取得し、色を割り当てる（修正）
   useEffect(() => {
     if (id) {
-      fetch(getApiUrl(`/api/group/${id}/candidates`)) // basePath を含まない
+      fetch(getApiUrl(`/api/group/${id}/candidates`))
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          const coloredEvents = data.map(applyEventStyle);
+          const coloredEvents = data.map(event => {
+            let eventStyle = {
+              backgroundColor: getColorByUserName(event.title || 'Unknown User'),
+              textColor: '#fff',
+            };
+            
+            // 'GROUP' ユーザーの場合のスタイルを調整
+            if (event.title === 'GROUP') {
+              eventStyle = {
+                backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
+                borderColor: 'orange',
+                textColor: '', // テキストは表示しない
+                display: 'background',
+              };
+            }
+            
+            return {
+              ...event,
+              ...eventStyle,
+            };
+          });
           setEvents(coloredEvents);
         } else {
           console.warn('予期しないデータ形式:', data);
@@ -159,12 +171,12 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
       })
       .catch((error) => console.error('Error fetching candidates:', error));
     }
-  }, [id]);
+  }, [id, basePath]);
   
   // 最終候補日データを取得（修正）
   useEffect(() => {
     if (id) {
-      fetch(getApiUrl(`/api/group/${id}/results`)) // basePath を含まない
+      fetch(getApiUrl(`/api/group/${id}/results`))
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -176,7 +188,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
       })
       .catch((error) => console.error('Error fetching results:', error));
     }
-  }, [id]);
+  }, [id, events, basePath]);
   
   useEffect(() => {
     if (id) {
@@ -227,7 +239,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
     return events
     .filter(event => 
       new Date(event.start).getTime() === new Date(startTime).getTime() &&
-      event.title !== 'GROUP'  // GROUP を除外
+      event.title !== 'GROUP'  // GROUP を除��
     )
     .map(event => ({
       name: event.title,
@@ -284,35 +296,39 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
       return;
     }
     
-    // 同じユーザーが同じ時間帯に既にイベントを持っているか確認を強化
+    // 同じユーザーが同じ時間帯に既にイベントを持っているか確認
     const existingEvent = events.find(e =>
       e.title === currentName &&
-      new Date(e.start).getTime() === start.getTime()
+      new Date(e.start).getTime() === start.getTime() &&
+      new Date(e.end).getTime() === end.getTime()
     );
     
     if (existingEvent) {
       // イベントを削除する
-      try {
+      if (confirm('この時間帯の自分のイベントを削除しますか？')) {
         const eventId = parseInt(existingEvent.id);
-        const res = await fetch(getApiUrl(`/api/group/${id}/candidates`), {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventId }),
-        });
-        
-        if (res.ok) {
-          setEvents(events.filter(e => e.id !== existingEvent.id));
-        } else {
-          const errorData = await res.json();
-          alert(`エラー: ${errorData.error}`);
+        try {
+          const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId }),
+          });
+          
+          if (res.ok) {
+            setEvents(events.filter(e => e.id !== existingEvent.id));
+          } else {
+            const errorData = await res.json();
+            alert(`エラー: ${errorData.error}`);
+          }
+        } catch (err) {
+          alert('イベントの削除中にエラーが発生しました');
+          console.error('Error deleting event:', err);
         }
-      } catch (err) {
-        alert('イベントの削除中にエラーが発生しました');
-        console.error('Error deleting event:', err);
       }
     } else {
+      // イベントを追加する
       try {
-        const res = await fetch(getApiUrl(`/api/group/${id}/candidates`), {
+        const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ start, end, name: currentName }),
@@ -320,6 +336,26 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
         
         if (res.ok) {
           const data = await res.json();
+          // ユーザーごとの色を設定
+          let newEventStyle = {
+            backgroundColor: getColorByUserName(currentName),
+            textColor: '#fff',
+          };
+          
+          if (currentName === 'GROUP') {
+            newEventStyle = {
+              backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
+              borderColor: 'orange',
+              textColor: '',
+              display: 'background',
+            };
+          }
+          
+          const newEvent = {
+            ...data,
+            ...newEventStyle,
+          };
+          setEvents([...events, newEvent]);
         } else {
           const errorData = await res.json();
           alert(`エラー: ${errorData.error}`);
@@ -330,7 +366,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
       }
     }
   };
-
+  
   // イベントクリック時の処理（修正済み）
   const handleEventClick = async (clickInfo) => {
     if (!name.trim() && !isGroupMode) {
@@ -364,34 +400,36 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
     
     if (existingEvent) {
       // 自分のイベントがある場合、削除する
-      try {
+      if (confirm('この時間帯の自分のイベントを削除しますか？')) {
         const eventId = parseInt(existingEvent.id);
-        const res = await fetch(getApiUrl(`/api/group/${id}/candidates`), {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventId }),
-        });
-        
-        if (res.ok) {
-          // カレンダーからイベントを削除
-          const calendarApi = clickInfo.view.calendar;
-          const eventToRemove = calendarApi.getEventById(existingEvent.id);
-          if (eventToRemove) {
-            eventToRemove.remove();
+        try {
+          const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId }),
+          });
+          
+          if (res.ok) {
+            // カレンダーからイベントを削除
+            const calendarApi = clickInfo.view.calendar;
+            const eventToRemove = calendarApi.getEventById(existingEvent.id);
+            if (eventToRemove) {
+              eventToRemove.remove();
+            }
+            setEvents(events.filter(e => e.id !== existingEvent.id));
+          } else {
+            const errorData = await res.json();
+            alert(`エラー: ${errorData.error}`);
           }
-          setEvents(events.filter(e => e.id !== existingEvent.id));
-        } else {
-          const errorData = await res.json();
-          alert(`エラー: ${errorData.error}`);
+        } catch (err) {
+          alert('イベントの削除中にエラーが発生しました');
+          console.error('Error deleting event:', err);
         }
-      } catch (err) {
-        alert('イベントの削除中にエラーが発生しました');
-        console.error('Error deleting event:', err);
       }
     } else {
       // 自分のイベントがない場合、追加する
       try {
-        const res = await fetch(getApiUrl(`/api/group/${id}/candidates`), {
+        const res = await fetch(`${basePath}/api/group/${id}/candidates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -403,6 +441,26 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
         
         if (res.ok) {
           const data = await res.json();
+          // ユーザーごとの色を設定
+          let newEventStyle = {
+            backgroundColor: getColorByUserName(currentName),
+            textColor: '#fff',
+          };
+          
+          if (currentName === 'GROUP') {
+            newEventStyle = {
+              backgroundColor: 'rgba(255, 165, 0, 0.5)', // 半透明のオレンジ色
+              borderColor: 'orange',
+              textColor: '',
+              display: 'background',
+            };
+          }
+          
+          const newEvent = {
+            ...data,
+            ...newEventStyle,
+          };
+          setEvents([...events, newEvent]);
         } else {
           const errorData = await res.json();
           alert(`エラー: ${errorData.error}`);
@@ -435,34 +493,29 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
     return duration === 1;
   };
   
-  // コメント追加ハンドラーを修正
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert('コメントを投稿するには名前を入力し��ください');
+      alert('コメントを投稿するには名前を入力してください');
       return;
     }
     if (!newComment.trim()) {
       alert('コメントを入力してください');
       return;
     }
-
+    
     try {
       const res = await fetch(getApiUrl(`/api/group/${id}/comments`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name,
-          text: newComment,
-        }),
+        body: JSON.stringify({ text: newComment, name }),
       });
-
+      
       if (res.ok) {
-        // サーバーからのWebSocket通知で処理されるため、
-        // ここでのsetCommentsは不要
-        setNewComment(''); // 入力フィールドをクリア
+        const comment = await res.json();
+        setComments([comment, ...comments]);
+        setNewComment('');
       } else {
-        console.error('コメント投稿エラー:', await res.text());
         alert('コメントの投稿に失敗しました');
       }
     } catch (err) {
@@ -470,7 +523,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
       alert('コメントの投稿中にエラーが発生しました');
     }
   };
-
+  
   // 最も多いリストの項目をデフォルトで選択
   // useEffect(() => {
   //   if (isIcsMode) {
@@ -510,22 +563,19 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
     const events = results.map(result => {
       const users = getUsersForTimeSlot(result.startDateTime);
       const userNames = users.map(user => user.name).join(',');
-      const startDate = new Date(result.startDateTime);
-      const endDate = new Date(result.endDateTime);
+      const startDate = utcToZonedTime(new Date(result.startDateTime), timeZone);
+      const endDate = utcToZonedTime(new Date(result.endDateTime), timeZone);
       
       // 日付をICSフォーマットに変換
-      const start = format(startDate, "yyyyMMdd'T'HHmmss", { timeZone });
-      const end = format(endDate, "yyyyMMdd'T'HHmmss", { timeZone });
-          
-      // UIDの生成: result.id が存在する場合はそれを使用し、存在しない場合はUUIDを生成
-      const uid = result.id ? `${result.id}@meetingscheduler` : `${uuidv4()}@meetingscheduler`;
-    
+      const start = format(startDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
+      const end = format(endDate, "yyyyMMdd'T'HHmmss'Z'", { timeZone });
+      
       return [
         'BEGIN:VEVENT',
         `DTSTART;TZID=${timeZone}:${start}`,
         `DTEND;TZID=${timeZone}:${end}`,
         `DTSTAMP:${now}`,
-        `UID:${uid}@meetingscheduler`,
+        `UID:${result.id}@meetingscheduler`,
         `SUMMARY:${groupName} (${userNames})`,
         'END:VEVENT'
       ].join('\r\n');
@@ -548,126 +598,9 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   };
-
-  // 重複したuseEffectを削除し、1つのWebSocket初期化処理にまとめる
-  useEffect(() => {
-    if (!socketRef.current) {
-      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-      console.log(`basePath: ${basePath}`); // 確認のため出力
-      console.log(`getSocketUrl: ${getSocketUrl()}`); // 確認のため出力
-      socketRef.current = io(getSocketUrl(), {
-        path: `${basePath}/socket.io`,
-      });
-
-      const socket = socketRef.current;
-
-      socket.emit('joinGroup', { groupId: id });
-
-      socket.on('eventAdded', ({ event, senderId, isServerEvent }) => {
-        console.log('Received eventAdded:', { event, senderId, isServerEvent });
-        setEvents(prevEvents => {
-          // 既存のイベントとの重複チェックを修正
-          const eventExists = prevEvents.some(e => 
-            e.id === event.id || 
-            (e.title === event.title && 
-             new Date(e.start).getTime() === new Date(event.start).getTime())
-          );
-          
-          if (!eventExists) {
-            return [...prevEvents, applyEventStyle(event)];
-          }
-          return prevEvents;
-        });
-      });
-
-      socket.on('eventDeleted', ({ eventId }) => {
-        setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
-      });
-
-      // 最終候補日更新のリスナーを追加
-      socket.on('resultsUpdated', (newResults) => {
-        console.log('Received resultsUpdated:', newResults);
-        setResults(newResults);
-      });
-
-      // コメント追加のリスナーを追加
-      socket.on('commentAdded', (newComment) => {
-        console.log('Received commentAdded:', newComment);
-        setComments(prevComments => [newComment, ...prevComments]);
-      });
-
-      return () => {
-        socket.off('eventAdded');
-        socket.off('eventDeleted');
-        socket.off('resultsUpdated');
-        socket.off('commentAdded'); // コメントリスナーの解除を追加
-        socket.disconnect();
-        socketRef.current = null;
-      };
-    }
-  }, [id]); // id のみを依存配列に含める
-
-  // ユーザーの色を一貫して取得・管理する関数
-  const getConsistentColorForUser = (username) => {
-    if (userColors.has(username)) {
-      return userColors.get(username);
-    }
-    const newColor = getColorByUserName(username);
-    setUserColors(prev => new Map(prev).set(username, newColor));
-    return newColor;
-  };
-
-  // イベントにスタイルを適用する関数を修正
-  const applyEventStyle = (event) => {
-    if (!event) return null;
-
-    let eventStyle = {
-      ...event,
-      backgroundColor: getConsistentColorForUser(event.title),
-      textColor: '#fff',
-    };
-    
-    if (event.title === 'GROUP') {
-      eventStyle = {
-        ...event,
-        backgroundColor: 'rgba(255, 165, 0, 0.5)',
-        borderColor: 'orange',
-        textColor: '',
-        display: 'background',
-      };
-    }
-    
-    return eventStyle;
-  };
-
-  // basePath を取得
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-
+  
   return (
     <Container className="mt-5">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <a href={`${basePath}/`} style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-          <img 
-            src={`${basePath}/meeting-scheduler.png`} 
-            alt="Meeting Scheduler" 
-            style={{ height: '50px', marginRight: '10px' }} 
-          />
-          <h1 style={{ fontSize: '1.2rem', margin: 0 }}>Meeting Scheduler</h1>
-        </a>
-        <a 
-          href={`${basePath}/`} 
-          style={{ 
-            fontSize: '1rem', 
-            border: '2px solid #ccc', 
-            padding: '5px 10px', 
-            borderRadius: '5px', 
-            textDecoration: 'none' 
-          }}
-        >
-          新しいグループの作成
-        </a>
-      </div>
-      
       {/* グループ名とURL */}
       <GroupHeader
         groupName={groupName}
@@ -675,7 +608,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
         handleCopyUrl={handleCopyUrl}
         isCopied={isCopied}
       />
-    
+
       {/* カレンダーとサイドバー */}
       <Row>
         {/* カレンダー */}
@@ -690,7 +623,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
             version={version}
             setName={setName} // 追加
           />
-    
+
           <CommentSection
             comments={comments}
             handleAddComment={handleAddComment}
@@ -701,7 +634,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
             formatDateWithWeekday={formatDateWithWeekday}
           />
         </Col>
-    
+
         {/* サイドバー */}
         <Col md={4}>
           <Sidebar

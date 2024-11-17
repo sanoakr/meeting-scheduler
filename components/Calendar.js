@@ -16,7 +16,7 @@ export default function Calendar({
     <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
       slotMinWidth={30}
-      slotMaxWidth={60}
+      //slotMaxWidth={60}
       eventOverlap={true}
       initialView="todayWeek"
       headerToolbar={{
@@ -50,8 +50,8 @@ export default function Calendar({
       allDaySlot={false}
       slotDuration="01:00:00"
       snapDuration="01:00:00"
-      selectMinDuration="01:00:00"
-      selectMaxDuration="01:00:00"
+      //selectMinDuration="01:00:00"
+      //selectMaxDuration="01:00:00"
       eventContent={renderEventContent}
       eventClassNames={(arg) => {
         if (arg.event.title === 'GROUP') {

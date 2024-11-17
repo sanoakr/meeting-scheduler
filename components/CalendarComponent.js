@@ -42,7 +42,7 @@ const CalendarComponent = ({
             },
           }}
           slotMinWidth={30} // スロットの最小幅を設定
-          slotMaxWidth={60} // スロットの最大幅を設定
+          //slotMaxWidth={60} // スロットの最大幅を設定
           eventOverlap={true} // イベントの重なりを許可
           selectable={true}
           selectAllow={selectAllow}
@@ -57,8 +57,8 @@ const CalendarComponent = ({
           allDaySlot={false}
           slotDuration="01:00:00"
           snapDuration="01:00:00"
-          selectMinDuration="01:00:00"
-          selectMaxDuration="01:00:00"
+          //selectMinDuration="01:00:00"
+          //selectMaxDuration="01:00:00"
           eventContent={renderEventContent}
           eventClassNames={(arg) => {
             if (arg.event.title === 'GROUP') {
