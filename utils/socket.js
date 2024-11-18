@@ -7,16 +7,19 @@ function initIO(server) {
   
   const io = new Server(server, {
     path: `${basePath}/socket.io`,  // Socket.IO のパスを設定
+    //transports: ['websocket'], // WebSocket のみを許可
     transports: ['websocket', 'polling'], // WebSocket とポーリングの両方を許可
     cors: {
       origin: '*',
-      methods: ["GET", "POST"]
+      methods: ["GET", "POST"],
+      credentials: false
     },
     pingTimeout: 60000,
     pingInterval: 25000,
   });
   // サーバの設定を確認するためのログ
   console.log(`WebSocket Server path: ${io.path()}`)
+  //const namespaces = io.of(basePath);
 
   io.on('connection', (socket) => {
     console.log('A user connected');

@@ -8,6 +8,7 @@ export const initiateSocket = () => {
   if (!socket) {
     socket = io('/', {
       path: `${basePath}/socket.io`,
+      //transports: ['websocket']
       transports: ['websocket', 'polling']
     });
   }

@@ -123,7 +123,8 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
   // クライアントサイドでのみ URL を設定（修正）
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setPageUrl(`${window.location.origin}${router.asPath}`);
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+      setPageUrl(`${window.location.origin}${basePath}${router.asPath}`);
     }
   }, [router.asPath]);
   
