@@ -6,6 +6,7 @@ function initIO(server) {
   console.log(`WebSocket basePath: ${basePath}/socket.io`); // 確認のため出力
   
   const io = new Server(server, {
+    //path: `/socket.io`, 
     path: `${basePath}/socket.io`,  // Socket.IO のパスを設定
     //transports: ['websocket'], // WebSocket のみを許可
     transports: ['websocket', 'polling'], // WebSocket とポーリングの両方を許可

@@ -252,7 +252,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
   });
   const users = Array.from(usersMap.entries()); // [ユーザー名, 色] の配列
   
-  // 日付クリック時の処理（修正済み）
+  // 日付クリック時の処理（修��済み）
   const handleDateClick = async (clickInfo) => {
     console.log('Date clicked:', clickInfo.start, clickInfo.end); // デバッグ用ログ
     let currentName = isGroupMode ? 'GROUP' : name;
@@ -440,7 +440,7 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert('コメントを投稿するには名前を入力し��ください');
+      alert('コメントを投稿するには名前を入力してください');
       return;
     }
     if (!newComment.trim()) {
@@ -552,16 +552,14 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
 
   // 重複したuseEffectを削除し、1つのWebSocket初期化処理にまとめる
   useEffect(() => {
-    if (!socketRef.current) {
+    if (!socketRef.current || socketRef.current.disconnected) {
       const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
       console.log(`basePath: ${basePath}`); // 確認のため出力
-      console.log(`getSocketUrl: ${getSocketUrl()}`); // 確認のため出力
-      socketRef.current = io(getSocketUrl(), {
+      socketRef.current = io('/', {
         path: `${basePath}/socket.io`,
       });
 
       const socket = socketRef.current;
-
       socket.emit('joinGroup', { groupId: id });
 
       socket.on('eventAdded', ({ event, senderId, isServerEvent }) => {
@@ -595,6 +593,10 @@ export default function GroupPage({ version, groupName: initialGroupName }) {
       socket.on('commentAdded', (newComment) => {
         console.log('Received commentAdded:', newComment);
         setComments(prevComments => [newComment, ...prevComments]);
+      });
+
+      socket.on('disconnect', () => {
+        socketRef.current = null;
       });
 
       return () => {
