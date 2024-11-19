@@ -155,7 +155,7 @@ li.mb-2 {
 
 /* ユーザー名タグのスタイル調整 */
 .px-2.py-1.rounded {
-  padding: 0.15rem 0.5rem !important; /* パディングを縮小 */
+  padding: 0.15rem 0.5rem !important; /* パディングを縮小*/
   font-size: 0.85rem !important; /* フォントサイズを小さく */
 }
 
@@ -163,4 +163,36 @@ li.mb-2 {
 .badge {
   font-size: 0.75rem !important;
   padding: 0.2em 0.4em !important;
+}
+
+.fc .fc-col-header-cell {
+  font-size: 0.7rem !important; /* フォントサイズを0.7remに設定 */
+  padding: 2px !important; /* パディングを調整 */
+  white-space: normal !important; /* 改行を許可 */
+  word-break: keep-all !important; /* 単語の途中で改行しない */
+}
+
+.fc .fc-col-header-cell-cushion {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 2px !important; /* 日付と曜日の間隔を設定 */
+  overflow: hidden;
+}
+
+.fc .fc-col-header-cell-cushion span {
+  display: block !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+/* 画面幅が600px以下の場合のスタイル調整 */
+@media (max-width: 600px) {
+  .fc .fc-col-header-cell {
+    font-size: 0.6rem !important; /* フォントサイズをさらに小さく */
+    padding: 1px !important;      /* パディングを縮小 */
+  }
+  .fc .fc-col-header-cell-cushion {
+    gap: 1px !important;          /* 日付と曜日の間隔を縮小 */
+  }
 }
